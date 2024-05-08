@@ -1,0 +1,14 @@
+{
+  "name": "qw-web3signer",
+  "version": "1.0.0",
+  "description": "signing service using private keys stored in an external vault, or encrypted on a disk.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.4.5"
+  }
+}
