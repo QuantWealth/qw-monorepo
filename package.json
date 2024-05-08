@@ -1,0 +1,9 @@
+{
+  "name": "qw-monorepo",
+  "version": "1.0.0",
+  "description": "QuantWealth is an all-in-one wealth management solution that blends traditional finance (tradfi), AI, and crypto to provide safe and transparent returns.",
+  "main": "index.js",
+  "repository": "https://github.com/QuantWealth/qw-monorepo.git",
+  "author": "sanchaymittal <sanchaymittal@gmail.com>",
+  "license": "Apache License"
+}
