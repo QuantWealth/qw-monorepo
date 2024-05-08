@@ -8,6 +8,21 @@ import {
   AssetDataTuple
 } from "./schema";
 
+/// ------- Directory Methods -------
+/**
+ * Retrieves or creates the single instance of the Directory.
+ * @returns A promise that resolves to the directory instance.
+ */
+export async function getOrCreateDirectory(): Promise<IDirectory> {
+  let directory = await Directory.findOne();
+  if (!directory) {
+    directory = new Directory({ strategies: new Map() });
+    await directory.save();
+  }
+  return directory;
+}
+
+/// ------- Strategy Methods -------
 /**
  * Upserts a strategy in the directory. If the strategy exists, it updates it; otherwise, it creates a new entry.
  * @param strategyId - 32-byte ID value.
@@ -21,52 +36,32 @@ export async function upsertStrategy(strategyId: string, data: IStrategy): Promi
   console.log("Strategy upserted successfully.");
 }
 
+/// ------- Market Data Methods -------
 /**
- * Upserts TVL data associated with a strategy. If TVL data for the strategy exists, it appends to it; otherwise, it creates a new entry.
- * @param strategyId - The ID of the strategy to associate the TVL data with.
- * @param data - Array of [timestamp, amount] tuples to be added or created.
- * @returns void
+ * Retrieves or creates the single instance of MarketData.
+ * @returns A promise that resolves to the market data instance.
  */
-export async function upsertTVL(strategyId: string, data: [number, number][]): Promise<void> {
-  const marketData = await getOrCreateMarketData();
-  const existingData = marketData.tvl.get(strategyId) || { series: [] };
-  existingData.series.push(...data);
-  marketData.tvl.set(strategyId, existingData);
-  await marketData.save();
-  console.log("TVL data upserted successfully.");
+export async function getOrCreateMarketData(): Promise<IMarketData> {
+  let marketData = await MarketData.findOne();
+  if (!marketData) {
+    marketData = new MarketData({ tvl: new Map(), assets: new Map() });
+    await marketData.save();
+  }
+  return marketData;
 }
 
-/**
- * Upserts asset pair data. If data for the asset pair exists, it appends to it; otherwise, it creates a new entry.
- * @param assetPair - The asset pair key, like "USDT-ETH".
- * @param data - Array of [timestamp, volume, open, close] tuples to be added or updated.
- * @returns void
- */
-export async function upsertAssetPair(assetPair: string, data: [number, number, number, number][]): Promise<void> {
-  const marketData = await getOrCreateMarketData();
-  const existingData = marketData.assets.get(assetPair) || { series: [] };
-  existingData.series.push(...data);
-  marketData.assets.set(assetPair, existingData);
-  await marketData.save();
-  console.log("Asset pair data upserted successfully.");
-}
-
+/// ------- Asset Pair Methods -------
 /**
  * Appends new asset pair data ensuring chronological order.
- * @param marketDataId - The ID of the MarketData document.
  * @param assetPair - The asset pair key, like "USDT-ETH".
  * @param data - Array of [timestamp, volume, open, close] tuples to be appended.
  * @returns void
  */
 export async function appendAssetPairData(
-  marketDataId: string,
   assetPair: string,
   data: AssetDataTuple[]
 ): Promise<void> {
-  const marketData = await MarketData.findById(marketDataId);
-  if (!marketData) {
-    throw new Error("MarketData document not found.");
-  }
+  const marketData = await getOrCreateMarketData();
 
   // Regex to check for the format "AAA-BBB", where AAA and BBB are uppercase letters (ticker symbols).
   const assetPairRegex = /^[A-Z]{2,5}-[A-Z]{2,5}$/;
@@ -100,6 +95,33 @@ export async function appendAssetPairData(
 }
 
 /**
+ * Inserts asset pair data in the correct chronological location.
+ * @param assetPair - The asset pair key, like "USDT-ETH".
+ * @param newData - Array of [timestamp, volume, open, close] tuples to be inserted.
+ * @returns void
+ */
+export async function insertAssetPairData(assetPair: string, newData: AssetDataTuple[]): Promise<void> {
+  const marketData = await getOrCreateMarketData();
+
+  const assetData = marketData.assets.get(assetPair) || { series: [] as AssetDataTuple[] };
+  
+  // Insert each new data tuple in the correct chronological position
+  newData.forEach((newTuple) => {
+    const pos = assetData.series.findIndex((existingTuple) => existingTuple[0] > newTuple[0]);
+    if (pos === -1) {
+      assetData.series.push(newTuple); // Append at the end if all existing tuples are earlier
+    } else {
+      assetData.series.splice(pos, 0, newTuple); // Insert at the found position
+    }
+  });
+
+  marketData.assets.set(assetPair, assetData);
+  await marketData.save();
+  console.log("Asset pair data inserted successfully.");
+}
+
+/// ------- TVL Methods -------
+/**
  * Appends new TVL data ensuring chronological order.
  * @param strategyId - The strategy ID associated with the TVL data.
  * @param data - Array of [timestamp, amount] tuples to be appended.
@@ -120,29 +142,29 @@ export async function appendTVLData(strategyId: string, data: TVLDataTuple[]): P
   console.log("TVL data appended successfully.");
 }
 
-
 /**
- * Retrieves or creates the singleton instance of the Directory.
- * @returns A promise that resolves to the directory instance.
+ * Inserts TVL data in the correct chronological location.
+ * @param strategyId - The strategy ID associated with the TVL data.
+ * @param newData - Array of [timestamp, amount] tuples to be inserted.
+ * @returns void
  */
-export async function getOrCreateDirectory(): Promise<IDirectory> {
-  let directory = await Directory.findOne();
-  if (!directory) {
-    directory = new Directory({ strategies: new Map() });
-    await directory.save();
-  }
-  return directory;
+export async function insertTVLData(strategyId: string, newData: TVLDataTuple[]): Promise<void> {
+  const marketData = await getOrCreateMarketData();
+
+  const tvlData = marketData.tvl.get(strategyId) || { series: [] as TVLDataTuple[] };
+  
+  // Insert each new data tuple in the correct chronological position
+  newData.forEach((newTuple) => {
+    const pos = tvlData.series.findIndex((existingTuple) => existingTuple[0] > newTuple[0]);
+    if (pos === -1) {
+      tvlData.series.push(newTuple); // Append at the end if all existing tuples are earlier
+    } else {
+      tvlData.series.splice(pos, 0, newTuple); // Insert at the found position
+    }
+  });
+
+  marketData.tvl.set(strategyId, tvlData);
+  await marketData.save();
+  console.log("TVL data inserted successfully.");
 }
 
-/**
- * Retrieves or creates the singleton instance of MarketData.
- * @returns A promise that resolves to the market data instance.
- */
-export async function getOrCreateMarketData(): Promise<IMarketData> {
-  let marketData = await MarketData.findOne();
-  if (!marketData) {
-    marketData = new MarketData({ tvl: new Map(), assets: new Map() });
-    await marketData.save();
-  }
-  return marketData;
-}
