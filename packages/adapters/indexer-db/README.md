@@ -1,11 +1,12 @@
-QuantWealth Indexer DB
+QuantWealth Indexer DB Adapter
 
-This project manages backend operations for the QuantWealth finance app, focusing on market data and strategy management.
+This adapter provides the interface for the database used in operations for the QuantWealth ecosystem, focusing on market data and strategy management.
 
 Getting Started
 Prerequisites
-- MongoDB: Download and install from MongoDB's official site.
-- Node.js and Yarn: Ensure both are installed as Yarn is used for package management.
+- MongoDB \(Download and install from MongoDB's official site.\)
+- Node.js
+- Yarn
 
 Installation
 Run the following command to install dependencies and perform necessary setups:
