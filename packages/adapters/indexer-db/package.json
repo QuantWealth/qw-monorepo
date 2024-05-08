@@ -8,7 +8,7 @@
   "scripts": {
     "boot": "sh ./etc/boot",
     "install": "sh ./etc/install"
-  }
+  },
   "dependencies": {
     "@types/node": "^20.12.11",
     "express": "^4.19.2",
