@@ -6,8 +6,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "boot": "sh ./etc/boot",
-    "install": "sh ./etc/install"
+    "boot": "sh ./etc/boot-db",
+    "install": "sh ./etc/install-db"
   },
   "dependencies": {
     "@types/node": "^20.12.11",
