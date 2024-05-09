@@ -1,4 +1,6 @@
-export const TOKEN_BALANCE = [
+import { TTokenBalance } from '../types/balance';
+
+export const TOKEN_BALANCE: Array<TTokenBalance> = [
   {
     name: 'Tether USD',
     symbol: 'USDT',
