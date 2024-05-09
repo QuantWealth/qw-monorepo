@@ -5,6 +5,10 @@ import { SavingService } from './saving.service';
 export class SavingController {
   constructor(private readonly savingService: SavingService) {}
 
+  /**
+   *  Get route to request all types of savings
+   * @returns savings array
+   */
   @HttpCode(HttpStatus.OK)
   @Get('all')
   getAllSavings() {

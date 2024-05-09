@@ -6,6 +6,11 @@ import { GetUserBalanceDto } from './dto/get-user-balance.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * Retrieves user token balance
+   * @param {GetUserBalanceDto} query - query params containing user wallet address and they way returned data should be arranged
+   * @returns userTokenBalance array
+   */
   @HttpCode(HttpStatus.OK)
   @Get('balance')
   getUserBalance(@Query() query: GetUserBalanceDto) {
