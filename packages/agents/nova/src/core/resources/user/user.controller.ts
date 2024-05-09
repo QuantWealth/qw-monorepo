@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { GetUserBalanceDto } from './dto/get-user-balance.dto';
+import { UserBalanceQuery } from './dto/user-balance-query.dto';
 
 @Controller('user')
 export class UserController {
@@ -8,12 +8,12 @@ export class UserController {
 
   /**
    * Retrieves user token balance
-   * @param {GetUserBalanceDto} query - query params containing user wallet address and they way returned data should be arranged
+   * @param {UserBalanceQuery} query - query params containing user wallet address and the way returned data should be arranged
    * @returns userTokenBalance array
    */
   @HttpCode(HttpStatus.OK)
   @Get('balance')
-  getUserBalance(@Query() query: GetUserBalanceDto) {
+  getUserBalance(@Query() query: UserBalanceQuery) {
     const data = this.userService.getUserBalance();
 
     return {

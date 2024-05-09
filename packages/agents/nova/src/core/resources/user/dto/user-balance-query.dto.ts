@@ -11,7 +11,7 @@ export enum Sort {
   DESCENDING = 'descending',
 }
 
-export class GetUserBalanceDto {
+export class UserBalanceQuery {
   @IsString()
   @IsNotEmpty()
   @Length(42, 42)
