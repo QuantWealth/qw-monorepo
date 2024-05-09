@@ -15,7 +15,7 @@ export class UserBalanceQuery {
   @IsString()
   @IsNotEmpty()
   @Length(42, 42)
-  wallet_address: string;
+  walletAddress: string;
 
   @IsString()
   @IsEnum(Sort)

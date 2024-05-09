@@ -3,7 +3,7 @@ export type TTokenBalance = {
   symbol: string;
   address: string;
   quantity: number;
-  fiat_price: number;
+  fiatPrice: number;
   network: string;
-  total_count: number;
+  totalCount: number;
 };

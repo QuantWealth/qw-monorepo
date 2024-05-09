@@ -3,7 +3,7 @@ import { SavingType, TSaving } from '../types';
 export const SAVINGS: Array<TSaving> = [
   {
     investedAmount: 579.5,
-    APY: 11.76,
+    apy: 11.76,
     currentAmount: 615.8,
     type: SavingType.FLEXI,
     strategy: 1,
@@ -13,7 +13,7 @@ export const SAVINGS: Array<TSaving> = [
   },
   {
     investedAmount: 876.2,
-    APY: 14.41,
+    apy: 14.41,
     currentAmount: 1081.1,
     type: SavingType.FIX,
     strategy: 2,

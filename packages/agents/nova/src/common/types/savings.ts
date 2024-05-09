@@ -5,7 +5,7 @@ export enum SavingType {
 
 export type TSaving = {
   investedAmount: number;
-  APY: number;
+  apy: number;
   currentAmount: number;
   type: SavingType;
   strategy: number;
