@@ -29,12 +29,13 @@ OrderSchema.pre('save', function(next) {
   // TODO: If 'signer' is not appropriate, adjust accordingly.
   // Set the ID as a hash of (timestamp, signer).
   if (this.isNew) {
+    // Guarantee the status is "P" pending.
+    this.status = "P";
     // TODO: Include once utils are ready:
     // this.id = keccak256(`${this.timestamp}-${this.wallet}`);
   }
   next();
 });
-
 
 /// Models
 const OrderModel = mongoose.model<IOrder>("Order", OrderSchema);
