@@ -1,17 +1,10 @@
 {
-  "name": "qw-indexer-db",
+  "name": "@qw/orderbook-db",
   "version": "1.0.0",
   "main": "index.ts",
   "license": "MIT",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "boot": "sh ./etc/boot-db",
-    "install": "sh ./etc/install-db"
-  },
   "dependencies": {
     "@types/node": "^20.12.11",
-    "express": "^4.19.2",
     "mongodb": "^6.6.1",
     "mongoose": "^8.3.4",
     "node": "^20.13.0",

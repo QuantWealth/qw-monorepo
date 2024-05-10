@@ -1,5 +1,5 @@
 {
-  "name": "qw-orderbook",
+  "name": "qw-indexer",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT"

@@ -1,8 +1,14 @@
 {
-  "name": "qw-orderbook-db",
+  "name": "@qw/atlas-db",
   "version": "1.0.0",
   "main": "index.ts",
   "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "boot": "sh ./etc/boot-db",
+    "install": "sh ./etc/install-db"
+  },
   "dependencies": {
     "@types/node": "^20.12.11",
     "mongodb": "^6.6.1",
