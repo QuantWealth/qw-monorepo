@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "boot": "sh ./etc/boot-db",
-    "install": "sh ./etc/install-db"
+    "station": "sh ./etc/station-db"
   },
   "dependencies": {
     "@types/node": "^20.12.11",
