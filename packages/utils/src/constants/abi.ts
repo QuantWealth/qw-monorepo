@@ -1,5 +1,3 @@
-
-
 export const ERC20Abi = [
   // Read-Only Functions
   "function name() public view returns (string)",
