@@ -10,5 +10,8 @@
   "workspaces": [
     "packages/*",
     "packages/*/*"
-  ]
+  ],
+  "dependencies": {
+    "@nestjs/swagger": "^7.3.1"
+  }
 }
