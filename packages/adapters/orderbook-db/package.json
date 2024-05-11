@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "main": "index.ts",
   "license": "MIT",
+  "scripts": {
+    "boot": "sh ./etc/boot-db",
+    "station": "sh ./etc/station-db"
+  },
   "dependencies": {
     "@types/node": "^20.12.11",
     "mongodb": "^6.6.1",
