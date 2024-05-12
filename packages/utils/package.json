@@ -7,6 +7,7 @@
     "@uniswap/sdk-core": "^5.0.0",
     "@uniswap/v3-sdk": "^3.11.2",
     "ethers": "^6.12.1",
+    "jest": "^29.7.0",
     "typescript": "^5.4.5"
   }
 }
