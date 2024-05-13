@@ -21,11 +21,11 @@ export class UserBalanceQuery {
   @IsString()
   @IsEnum(Sort)
   @IsOptional()
-  sort: Sort;
+  sort: Sort = Sort.ASCENDING;
 
   @IsNumber()
   @IsOptional()
-  limit: number;
+  limit: number = 10;
 
   @IsNumber()
   @IsOptional()
