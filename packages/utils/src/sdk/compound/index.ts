@@ -36,4 +36,4 @@ export const getCompoundTokenTotalBorrow = async (args: CompoundContractArgs) =>
     const res = await cTokenContract.totalBorrow();
 
     return Number(res.toString());
-}
+};
