@@ -1,12 +1,8 @@
-import { CCOMPOUND_TOKEN_ABI } from 'src/constants';
-import { getContract, JsonRpcProvider } from 'src/mockable';
+import { CCOMPOUND_TOKEN_ABI, SECONDS_PER_YEAR } from '../../constants';
+import { getContract, JsonRpcProvider } from '../../mockable';
+import { CompoundContractArgs } from '../../types/compound';
 
-export type CompoundContractArgs = {
-    rpc: string;
-    contractAddress: string;
-};
-
-export const getCompoundTokenApr = async (args: CompoundContractArgs) => {
+export const getCompoundTokenSupplyApr = async (args: CompoundContractArgs) => {
     const { rpc, contractAddress } = args;
 
     const rpcProvider = new JsonRpcProvider(rpc);
@@ -15,7 +11,9 @@ export const getCompoundTokenApr = async (args: CompoundContractArgs) => {
     const utilization = await cTokenContract.getUtilization();
     const res = await cTokenContract.getSupplyRate(utilization);
 
-    return res;
+    const supplyApr = Number(res.toString() / 1e18 * SECONDS_PER_YEAR * 100)
+
+    return supplyApr;
 };
 
 export const getCompoundTokenTotalSupply = async (args: CompoundContractArgs) => {
@@ -26,7 +24,7 @@ export const getCompoundTokenTotalSupply = async (args: CompoundContractArgs) =>
 
     const res = await cTokenContract.totalSupply();
 
-    return res;
+    return Number(res.toString());
 };
 
 export const getCompoundTokenTotalBorrow = async (args: CompoundContractArgs) => {
@@ -37,5 +35,5 @@ export const getCompoundTokenTotalBorrow = async (args: CompoundContractArgs) =>
 
     const res = await cTokenContract.totalBorrow();
 
-    return res;
+    return Number(res.toString());
 }

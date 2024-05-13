@@ -1,6 +1,10 @@
-import { Contract, JsonRpcProvider, parseUnits } from 'ethers';
+import { Contract, JsonRpcProvider, formatUnits, parseUnits } from 'ethers';
 
 export { JsonRpcProvider };
+
+export const toReadableAmount = (amount: bigint, decimals: number): string => {
+    return formatUnits(amount, decimals);
+}
 
 export const fromReadableAmount = (amount: number, decimals: number): bigint => {
     return parseUnits(amount.toString(), decimals);

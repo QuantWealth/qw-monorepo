@@ -1,13 +1,8 @@
-import { AAVE_POOL_ABI, AAVE_POOL_PROXY_SEPOLIA } from 'src/constants';
-import { getContract, JsonRpcProvider } from 'src/mockable';
+import { AAVE_POOL_ABI, AAVE_POOL_PROXY_SEPOLIA } from '../../constants';
+import { getContract, JsonRpcProvider, toReadableAmount } from '../../mockable';
+import { AaveTokenArgs } from '../../types/aave';
 
-export type AaveTokenArgs = {
-    rpc: string;
-    tokenAddress: string;
-};
-
-
-export const getAaveTokenApr = async (args: AaveTokenArgs) => {
+export const getAaveTokenData = async (args: AaveTokenArgs) => {
     const { rpc, tokenAddress } = args;
 
     const rpcProvider = new JsonRpcProvider(rpc);
@@ -15,7 +10,13 @@ export const getAaveTokenApr = async (args: AaveTokenArgs) => {
 
     const res = await aaveContract.getReserveData(tokenAddress);
 
-    return res;
+
+    return {
+        currentSupplyApy: Number(toReadableAmount(res[2], 25)),
+        currentVariableBorrowApy: Number(toReadableAmount(res[4], 25)),
+        currentStableBorrowApy: Number(toReadableAmount(res[5], 25)),
+        totalTreasuryBalance: Number(res[11].toString())
+    };
 };
 
 export const getReserveConfigurationAave = async (args: AaveTokenArgs) => {
@@ -26,5 +27,6 @@ export const getReserveConfigurationAave = async (args: AaveTokenArgs) => {
 
     const res = await aaveContract.getConfiguration(tokenAddress);
 
-    return res;
+    //! formatting required
+    return res[0];
 }

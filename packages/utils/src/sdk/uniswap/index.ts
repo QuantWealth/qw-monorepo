@@ -1,14 +1,6 @@
-import { UNISWAPV3_QUOTER_ABI, UNISWAPV3_QUOTER_SEPOLIA } from 'src/constants';
-import { JsonRpcProvider, getContract } from 'src/mockable';
-
-export type UniswapV3QuoteArgs = {
-    rpc: string;
-    tokenIn: string;
-    tokenOut: string;
-    amountIn: string;
-    fee: string;
-    sqrtPriceLimitX96?: string;
-}
+import { UNISWAPV3_QUOTER_ABI, UNISWAPV3_QUOTER_SEPOLIA } from '../../constants';
+import { JsonRpcProvider, getContract } from '../../mockable';
+import { UniswapV3QuoteArgs } from '../../types/uniswap';
 
 export const getQuoteFromUniswap = async (args: UniswapV3QuoteArgs) => {
     const { rpc, tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96 } = args;
