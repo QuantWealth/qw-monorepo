@@ -7,4 +7,5 @@ export type TTokenBalance = {
   network: string;
   totalCount: number;
   percentageChange: number;
+  totalBalance: number;
 };

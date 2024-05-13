@@ -10,6 +10,7 @@ export const TOKEN_BALANCE: Array<TTokenBalance> = [
     network: 'Linea',
     totalCount: 18,
     percentageChange: 4.1,
+    totalBalance: 68,
   },
   {
     name: 'USDC.e',
@@ -20,5 +21,6 @@ export const TOKEN_BALANCE: Array<TTokenBalance> = [
     network: 'Linea',
     totalCount: 12,
     percentageChange: 1.5,
+    totalBalance: 45,
   },
 ];
