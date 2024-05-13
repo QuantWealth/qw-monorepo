@@ -27,6 +27,5 @@ export const getReserveConfigurationAave = async (args: AaveTokenArgs) => {
 
     const res = await aaveContract.getConfiguration(tokenAddress);
 
-    //! formatting required
     return res[0];
 }

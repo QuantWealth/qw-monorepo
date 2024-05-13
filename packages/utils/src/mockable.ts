@@ -1,6 +1,6 @@
-import { Contract, JsonRpcProvider, formatUnits, parseUnits } from 'ethers';
+import { Contract, JsonRpcProvider, formatUnits, parseUnits, AbiCoder } from 'ethers';
 
-export { JsonRpcProvider };
+export { JsonRpcProvider, AbiCoder };
 
 export const toReadableAmount = (amount: bigint, decimals: number): string => {
     return formatUnits(amount, decimals);
