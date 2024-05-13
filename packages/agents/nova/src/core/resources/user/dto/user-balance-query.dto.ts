@@ -21,7 +21,7 @@ export class UserBalanceQuery {
   @IsString()
   @IsEnum(Sort)
   @IsOptional()
-  sort: Sort;
+  sort: Sort = Sort.ASCENDING;
 
   @IsNumber()
   @IsOptional()
