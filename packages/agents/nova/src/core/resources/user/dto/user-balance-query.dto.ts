@@ -2,13 +2,14 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Length,
 } from 'class-validator';
 
 export enum Sort {
-  ASCENDING = 'ascending',
-  DESCENDING = 'descending',
+  ASCENDING = 'asc',
+  DESCENDING = 'desc',
 }
 
 export class UserBalanceQuery {
@@ -19,14 +20,14 @@ export class UserBalanceQuery {
 
   @IsString()
   @IsEnum(Sort)
-  @IsNotEmpty()
+  @IsOptional()
   sort: Sort;
 
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   limit: number;
 
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   next: number;
 }
