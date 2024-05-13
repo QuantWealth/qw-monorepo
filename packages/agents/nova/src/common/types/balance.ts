@@ -6,4 +6,6 @@ export type TTokenBalance = {
   fiatPrice: number;
   network: string;
   totalCount: number;
+  percentageChange: number;
+  totalBalance: number;
 };
