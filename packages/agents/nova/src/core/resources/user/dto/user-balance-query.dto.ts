@@ -25,7 +25,7 @@ export class UserBalanceQuery {
 
   @IsNumber()
   @IsOptional()
-  limit: number;
+  limit: number = 10;
 
   @IsNumber()
   @IsOptional()
