@@ -3,7 +3,7 @@ import { TransactionState } from './state';
 // Base Transaction type for read transactions.
 export interface ReadTransaction {
   nonce: number;
-  gasLimit: string;
+  gasLimit?: string;
   state: TransactionState;
   error?: string;
   confirmations?: number;

@@ -79,7 +79,7 @@ class TransactionService {
           };
 
           const response = await provider.call(callTransaction, 'latest');
-          this.storage.add(transaction);
+          this.storage.add(transaction as WriteTransaction);
           return transaction;
         }
       } catch (err) {
@@ -109,12 +109,12 @@ class TransactionService {
           transaction.confirmations = receipt.confirmations;
           if (transaction.confirmations >= config.confirmationsRequired) {
             transaction.state = TransactionState.Confirmed;
-            this.storage.remove(transaction);
+            this.storage.remove(transaction as WriteTransaction);
             callback(transaction);
             return;
           } else if (receipt.status === 0) {
             transaction.state = TransactionState.Reverted;
-            this.storage.remove(transaction);
+            this.storage.remove(transaction as WriteTransaction);
             callback(transaction);
             return;
           } else if (receipt.blockNumber && !(transaction as WriteTransaction).hash) {
@@ -127,7 +127,7 @@ class TransactionService {
         retries++;
         if (retries >= (config.maxRetries || 5)) {
           transaction.state = TransactionState.Failed;
-          this.storage.remove(transaction);
+          this.storage.remove(transaction as WriteTransaction);
           callback(new RpcFailure('RPC Failure after retries', { error, transaction }));
           return;
         }
