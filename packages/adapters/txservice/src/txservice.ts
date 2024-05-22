@@ -3,6 +3,7 @@ import { TransactionServiceConfig, validateConfig } from './config';
 import { TransactionStorage } from './storage';
 import { TransactionServiceError, RpcFailure, InvalidTransaction } from './error';
 import { TransactionState } from './state';
+import { WriteTransaction, ReadTransaction } from './transaction';
 
 interface TxDetails {
   chainId: number;
@@ -23,62 +24,53 @@ class TransactionService {
     this.storage = new TransactionStorage();
   }
 
-  async read(contractAddress: string, contractMethod: string, txDetails: TxDetails, callback: (tx: any) => void, previousTransaction?: any) {
+  async read(txDetails: TxDetails, callback: (tx: ReadTransaction) => void, previousTransaction?: ReadTransaction) {
     const transaction = await this.dispatch(txDetails, false, previousTransaction);
-    this.spawnMonitorThread(transaction, callback, this.read.bind(this, contractAddress, contractMethod, txDetails, callback));
+    this.spawnMonitorThread(transaction, callback, this.read.bind(this, txDetails, callback));
     return { ...transaction }; // Return a copy of the transaction object
   }
 
-  async write(contractAddress: string, contractMethod: string, txDetails: TxDetails, callback: (tx: any) => void, previousTransaction?: any) {
+  async write(txDetails: TxDetails, callback: (tx: WriteTransaction) => void, previousTransaction?: WriteTransaction) {
     const transaction = await this.dispatch(txDetails, true, previousTransaction);
-    this.spawnMonitorThread(transaction, callback, this.write.bind(this, contractAddress, contractMethod, txDetails, callback));
+    this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
     return { ...transaction }; // Return a copy of the transaction object
   }
 
-  async send(txDetails: TxDetails, callback: (tx: any) => void, previousTransaction?: any) {
+  async send(txDetails: TxDetails, callback: (tx: WriteTransaction) => void, previousTransaction?: WriteTransaction) {
     const transaction = await this.dispatch(txDetails, true, previousTransaction);
     this.spawnMonitorThread(transaction, callback, this.send.bind(this, txDetails, callback));
     return { ...transaction }; // Return a copy of the transaction object
   }
 
-  private async dispatch(txDetails: TxDetails, isWrite: boolean, previousTransaction?: any) {
+  private async dispatch(txDetails: TxDetails, isWrite: boolean, previousTransaction?: WriteTransaction | ReadTransaction) {
     const { chainId } = txDetails;
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
 
-    let transaction: any = {
-      chainId,
-      to: txDetails.to,
-      value: ethers.utils.parseUnits(txDetails.value, 'wei').toString(),
-      data: txDetails.data,
+    let transaction: WriteTransaction | ReadTransaction = {
+      nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount('pending'),
+      gasLimit: ethers.utils.parseUnits(txDetails.value, 'wei').toString(),
       state: TransactionState.Submitted,
+      ...(isWrite && previousTransaction ? { gasPrice: this.bumpGasPrice((previousTransaction as WriteTransaction).gasPrice!, config.gasPriceBump) } : {})
     };
-
-    if (previousTransaction) {
-      transaction = {
-        ...transaction,
-        gasPrice: this.bumpGasPrice(previousTransaction.gasPrice, config.gasPriceBump),
-        nonce: previousTransaction.nonce
-      };
-    }
 
     let error: any;
 
     for (let providerUrl of providers) {
       try {
         const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-        const gasPrice = previousTransaction ? transaction.gasPrice : await this.getGasPrice(provider, config);
+        const gasPrice = previousTransaction ? (transaction as WriteTransaction).gasPrice : await this.getGasPrice(provider, config);
 
         if (isWrite) {
           transaction = {
             ...transaction,
             gasPrice,
             nonce: transaction.nonce ?? await this.signer.getTransactionCount('pending'),
-          };
+          } as WriteTransaction;
 
-          const response = await this.signer.sendTransaction(transaction);
+          const response = await this.signer.sendTransaction(transaction as WriteTransaction);
           transaction.hash = response.hash;
-          this.storage.add(transaction);
+          this.storage.add(transaction as WriteTransaction);
           return transaction;
         } else {
           const callTransaction = {
@@ -87,7 +79,6 @@ class TransactionService {
           };
 
           const response = await provider.call(callTransaction, 'latest');
-          // Hash will be assigned once the transaction is mined
           this.storage.add(transaction);
           return transaction;
         }
@@ -100,10 +91,10 @@ class TransactionService {
       }
     }
 
-    throw new TransactionError('Failed to dispatch transaction', { ...transaction, error });
+    throw new TransactionServiceError('Failed to dispatch transaction', { ...transaction, error });
   }
 
-  private async monitor(transaction: any, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
+  private async monitor(transaction: WriteTransaction | ReadTransaction, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
     const { chainId } = transaction;
     const config = this.config[chainId];
     const provider = new ethers.providers.JsonRpcProvider(config.providers[0]); // Use the first provider for monitoring
@@ -113,7 +104,7 @@ class TransactionService {
 
     while (confirmations < config.confirmationsRequired && retries < (config.maxRetries || 5)) {
       try {
-        const receipt = await provider.getTransactionReceipt(transaction.hash);
+        const receipt = await provider.getTransactionReceipt((transaction as WriteTransaction).hash!);
         if (receipt) {
           transaction.confirmations = receipt.confirmations;
           if (transaction.confirmations >= config.confirmationsRequired) {
@@ -126,8 +117,8 @@ class TransactionService {
             this.storage.remove(transaction);
             callback(transaction);
             return;
-          } else if (receipt.blockNumber && !transaction.hash) {
-            transaction.hash = receipt.transactionHash; // Assign the hash once mined
+          } else if (receipt.blockNumber && !(transaction as WriteTransaction).hash) {
+            (transaction as WriteTransaction).hash = receipt.transactionHash; // Assign the hash once mined
           }
         }
 
@@ -144,7 +135,7 @@ class TransactionService {
       await this.sleep(config.timeout);
     }
 
-    if (parseFloat(transaction.gasPrice) >= parseFloat(config.gasPriceMax)) {
+    if (parseFloat((transaction as WriteTransaction).gasPrice!) >= parseFloat(config.gasPriceMax)) {
       await this.fillNonceGap(chainId, transaction.nonce);
       callback(new InvalidTransaction('Gas price hit maximum, transaction failed', { transaction }));
       return;
@@ -175,7 +166,9 @@ class TransactionService {
     if (bumpFactor < 0.05 || bumpFactor > 1.0) {
       throw new Error('Gas price bump percentage must be between 0.05 and 1.0');
     }
-    const newGasPrice = ethers.BigNumber.from(currentGasPrice).mul(ethers.BigNumber.from((1 + bumpFactor * 100).toString())).div(100);
+    const currentGasPriceBN = ethers.BigNumber.from(currentGasPrice);
+    const bumpAmount = currentGasPriceBN.mul(ethers.BigNumber.from(Math.floor(bumpFactor * 100).toString())).div(ethers.BigNumber.from('100'));
+    const newGasPrice = currentGasPriceBN.add(bumpAmount);
     return newGasPrice.toString();
   }
 
