@@ -1,5 +1,5 @@
 import { TransactionService } from "./txservice";
 import { TransactionState } from "./state";
-import { TransactionError } from "./errors";
+import { RpcFailure, InvalidTransaction } from "./errors";
 
-export { TransactionService, TransactionState, TransactionError };
+export { TransactionService, TransactionState, RpcFailure, InvalidTransaction };
