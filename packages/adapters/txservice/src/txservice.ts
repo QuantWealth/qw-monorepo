@@ -36,12 +36,6 @@ class TransactionService {
     return { ...transaction }; // Return a copy of the transaction object
   }
 
-  async send(txDetails: TxDetails, callback: (tx: WriteTransaction) => void, previousTransaction?: WriteTransaction) {
-    const transaction = await this.dispatch(txDetails, true, previousTransaction);
-    this.spawnMonitorThread(transaction, callback, this.send.bind(this, txDetails, callback));
-    return { ...transaction }; // Return a copy of the transaction object
-  }
-
   private async dispatch(txDetails: TxDetails, isWrite: boolean, previousTransaction?: WriteTransaction | ReadTransaction) {
     const { chainId } = txDetails;
     const config = this.config[chainId];
@@ -69,7 +63,7 @@ class TransactionService {
           } as WriteTransaction;
 
           const response = await this.signer.sendTransaction(transaction as WriteTransaction);
-          transaction.hash = response.hash;
+          (transaction as WriteTransaction).hash = response.hash;
           this.storage.add(transaction as WriteTransaction);
           return transaction;
         } else {
@@ -79,7 +73,6 @@ class TransactionService {
           };
 
           const response = await provider.call(callTransaction, 'latest');
-          this.storage.add(transaction as WriteTransaction);
           return transaction;
         }
       } catch (err) {
@@ -107,6 +100,9 @@ class TransactionService {
         const receipt = await provider.getTransactionReceipt((transaction as WriteTransaction).hash!);
         if (receipt) {
           transaction.confirmations = receipt.confirmations;
+          if (!transaction.confirmations) {
+            throw new InvalidTransaction("Transaction receipt did not have confirmations defined.", { transaction });
+          }
           if (transaction.confirmations >= config.confirmationsRequired) {
             transaction.state = TransactionState.Confirmed;
             this.storage.remove(transaction as WriteTransaction);
@@ -180,7 +176,7 @@ class TransactionService {
       value: '0',
       data: '0x'
     };
-    await this.send(txDetails, () => {}, { nonce: targetNonce });
+    await this.write(txDetails, () => {}, { nonce: targetNonce, state: TransactionState.Pending });
   }
 
   private sleep(ms: number) {

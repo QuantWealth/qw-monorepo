@@ -1,0 +1,23 @@
+{
+    "name": "qw-txservice",
+    "version": "0.0.1",
+    "description": "Transaction write/read service for a signer configured across multiple chains.",
+    "author": "QuantWealth",
+    "license": "MIT",
+    "main": "index.ts",
+    "files": [
+      "src/**/*"
+    ],
+    "dependencies": {
+      "@sinclair/typebox": "0.25.21",
+      "ethers": "5.7.2"
+    },
+    "devDependencies": {
+      "@types/sinon": "10.0.13",
+      "@typescript-eslint/eslint-plugin": "5.52.0",
+      "eslint": "8.34.0",
+      "sinon": "15.0.1",
+      "typescript": "4.9.5"
+    }
+  }
+  
