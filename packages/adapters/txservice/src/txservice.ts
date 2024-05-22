@@ -1,9 +1,9 @@
-import { ethers, providers } from 'ethers';
-import { TransactionServiceConfig, validateConfig } from './config';
-import { TransactionStorage } from './storage';
-import { TransactionServiceError, RpcFailure, InvalidTransaction } from './error';
-import { TransactionState } from './state';
-import { WriteTransaction, ReadTransaction } from './transaction';
+import { ethers, providers } from "ethers";
+import { TransactionServiceConfig, validateConfig } from "./config";
+import { TransactionStorage } from "./storage";
+import { TransactionServiceError, RpcFailure, InvalidTransaction } from "./errors";
+import { TransactionState } from "./state";
+import { WriteTransaction, ReadTransaction } from "./transaction";
 
 interface TxDetails {
   chainId: number;
@@ -27,13 +27,13 @@ class TransactionService {
   async read(txDetails: TxDetails, callback: (tx: ReadTransaction) => void, previousTransaction?: ReadTransaction) {
     const transaction = await this.dispatch(txDetails, false, previousTransaction);
     this.spawnMonitorThread(transaction, callback, this.read.bind(this, txDetails, callback));
-    return { ...transaction }; // Return a copy of the transaction object
+    return { ...transaction };
   }
 
   async write(txDetails: TxDetails, callback: (tx: WriteTransaction) => void, previousTransaction?: WriteTransaction) {
     const transaction = await this.dispatch(txDetails, true, previousTransaction);
     this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
-    return { ...transaction }; // Return a copy of the transaction object
+    return { ...transaction };
   }
 
   private async dispatch(txDetails: TxDetails, isWrite: boolean, previousTransaction?: WriteTransaction | ReadTransaction) {
@@ -42,14 +42,16 @@ class TransactionService {
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
 
     let transaction: WriteTransaction | ReadTransaction = {
-      nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount('pending'),
-      gasLimit: ethers.utils.parseUnits(txDetails.value, 'wei').toString(),
+      chainId,
+      nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount("pending"),
+      gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
       state: TransactionState.Submitted,
       ...(isWrite && previousTransaction ? { gasPrice: this.bumpGasPrice((previousTransaction as WriteTransaction).gasPrice!, config.gasPriceBump) } : {})
     };
 
     let error: any;
 
+    // TODO: Instead of just going down the list, we should do a batch/group of providers at a time.
     for (let providerUrl of providers) {
       try {
         const provider = new ethers.providers.JsonRpcProvider(providerUrl);
@@ -59,7 +61,7 @@ class TransactionService {
           transaction = {
             ...transaction,
             gasPrice,
-            nonce: transaction.nonce ?? await this.signer.getTransactionCount('pending'),
+            nonce: transaction.nonce ?? await this.signer.getTransactionCount("pending"),
           } as WriteTransaction;
 
           const response = await this.signer.sendTransaction(transaction as WriteTransaction);
@@ -72,25 +74,26 @@ class TransactionService {
             gasPrice,
           };
 
-          const response = await provider.call(callTransaction, 'latest');
+          const response = await provider.call(callTransaction, "latest");
           return transaction;
         }
       } catch (err) {
-        if (err.code === 'NETWORK_ERROR' || err.code === 'SERVER_ERROR') {
-          error = new RpcFailure('RPC Failure', { providerUrl, error: err });
+        if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
+          error = new RpcFailure("RPC Failure", { providerUrls: [providerUrl], error: err, transaction });
         } else {
-          error = new InvalidTransaction('Invalid Transaction', { error: err });
+          error = new InvalidTransaction("Invalid Transaction", { error: err, transaction });
         }
       }
     }
 
-    throw new TransactionServiceError('Failed to dispatch transaction', { ...transaction, error });
+    throw new InvalidTransaction("Failed to dispatch transaction", { error });
   }
 
   private async monitor(transaction: WriteTransaction | ReadTransaction, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
     const { chainId } = transaction;
     const config = this.config[chainId];
-    const provider = new ethers.providers.JsonRpcProvider(config.providers[0]); // Use the first provider for monitoring
+    // TODO: We should use a randomly selected provider or group of providers instead of just the first one.
+    const provider = new ethers.providers.JsonRpcProvider(config.providers[0]);
 
     let confirmations = 0;
     let retries = 0;
@@ -114,7 +117,7 @@ class TransactionService {
             callback(transaction);
             return;
           } else if (receipt.blockNumber && !(transaction as WriteTransaction).hash) {
-            (transaction as WriteTransaction).hash = receipt.transactionHash; // Assign the hash once mined
+            (transaction as WriteTransaction).hash = receipt.transactionHash;
           }
         }
 
@@ -124,7 +127,7 @@ class TransactionService {
         if (retries >= (config.maxRetries || 5)) {
           transaction.state = TransactionState.Failed;
           this.storage.remove(transaction as WriteTransaction);
-          callback(new RpcFailure('RPC Failure after retries', { error, transaction }));
+          callback(new RpcFailure("RPC Failure after retries", { providerUrls: [config.providers[0]], error, transaction }));
           return;
         }
       }
@@ -133,26 +136,27 @@ class TransactionService {
 
     if (parseFloat((transaction as WriteTransaction).gasPrice!) >= parseFloat(config.gasPriceMax)) {
       await this.fillNonceGap(chainId, transaction.nonce);
-      callback(new InvalidTransaction('Gas price hit maximum, transaction failed', { transaction }));
+      callback(new InvalidTransaction("Gas price hit maximum, transaction failed", { transaction }));
       return;
     }
 
     if (transaction.state === TransactionState.Failed) {
-      await originalMethod(transaction); // Retry with bumped gas
+      await originalMethod(transaction);
     }
   }
 
   private getRandomProviders(providers: string[], count: number): string[] {
+    // TODO: Ignoring count, this should just return providers.length worth of providers.
     const shuffled = providers.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    return shuffled.slice(0, providers.length);
   }
 
   private async getGasPrice(provider: providers.JsonRpcProvider, config: any) {
     let gasPrice = await provider.getGasPrice();
-    if (gasPrice.gt(ethers.utils.parseUnits(config.gasPriceMax, 'wei'))) {
-      gasPrice = ethers.utils.parseUnits(config.gasPriceMax, 'wei');
-    } else if (gasPrice.lt(ethers.utils.parseUnits(config.gasPriceMin, 'wei'))) {
-      gasPrice = ethers.utils.parseUnits(config.gasPriceMin, 'wei');
+    if (gasPrice.gt(ethers.utils.parseUnits(config.gasPriceMax, "wei"))) {
+      gasPrice = ethers.utils.parseUnits(config.gasPriceMax, "wei");
+    } else if (gasPrice.lt(ethers.utils.parseUnits(config.gasPriceMin, "wei"))) {
+      gasPrice = ethers.utils.parseUnits(config.gasPriceMin, "wei");
     }
     return gasPrice.toString();
   }
@@ -160,10 +164,10 @@ class TransactionService {
   private bumpGasPrice(currentGasPrice: string, bumpPercentage: string) {
     const bumpFactor = parseFloat(bumpPercentage);
     if (bumpFactor < 0.05 || bumpFactor > 1.0) {
-      throw new Error('Gas price bump percentage must be between 0.05 and 1.0');
+      throw new Error("Gas price bump percentage must be between 0.05 and 1.0");
     }
     const currentGasPriceBN = ethers.BigNumber.from(currentGasPrice);
-    const bumpAmount = currentGasPriceBN.mul(ethers.BigNumber.from(Math.floor(bumpFactor * 100).toString())).div(ethers.BigNumber.from('100'));
+    const bumpAmount = currentGasPriceBN.mul(ethers.BigNumber.from(Math.floor(bumpFactor * 100).toString())).div(ethers.BigNumber.from("100"));
     const newGasPrice = currentGasPriceBN.add(bumpAmount);
     return newGasPrice.toString();
   }
@@ -173,10 +177,10 @@ class TransactionService {
     const txDetails: TxDetails = {
       chainId: chainId,
       to: address,
-      value: '0',
-      data: '0x'
+      value: "0",
+      data: "0x"
     };
-    await this.write(txDetails, () => {}, { nonce: targetNonce, state: TransactionState.Pending });
+    await this.write(txDetails, () => {}, { chainId, nonce: targetNonce, state: TransactionState.Pending });
   }
 
   private sleep(ms: number) {

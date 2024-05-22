@@ -1,7 +1,8 @@
-import { TransactionState } from './state';
+import { TransactionState } from "./state";
 
-// Base Transaction type for read transactions.
+// Base Transaction type for read transactions
 export interface ReadTransaction {
+  chainId: number;
   nonce: number;
   gasLimit?: string;
   state: TransactionState;
@@ -9,9 +10,9 @@ export interface ReadTransaction {
   confirmations?: number;
 }
 
-// Extended Transaction type for write transactions.
+// Extended Transaction type for write transactions
 export interface WriteTransaction extends ReadTransaction {
-  hash?: string;
+  hash?: string; // Optional property for write transactions
   attempt?: number;
   bumps?: number;
   minedBlockNumber?: number;
@@ -19,6 +20,4 @@ export interface WriteTransaction extends ReadTransaction {
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
-  error?: string;
-  confirmations?: number;
 }

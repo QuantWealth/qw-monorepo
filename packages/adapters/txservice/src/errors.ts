@@ -1,35 +1,29 @@
-/**
- * Abstract class for transaction service errors.
- */
 export abstract class TransactionServiceError extends Error {
-  constructor(message: string) {
+  transaction?: any;
+
+  constructor(message: string, transaction?: any) {
     super(message);
     this.name = this.constructor.name;
+    this.transaction = transaction;
   }
 }
 
-/**
- * Error class for RPC failures.
- */
 export class RpcFailure extends TransactionServiceError {
-  providerUrl: string;
+  providerUrls: string[];
   error: any;
 
-  constructor(message: string, details: { providerUrl: string; error: any }) {
-    super(message);
-    this.providerUrl = details.providerUrl;
+  constructor(message: string, details: { providerUrls: string[]; error?: any; transaction?: any }) {
+    super(message, details.transaction);
+    this.providerUrls = details.providerUrls;
     this.error = details.error;
   }
 }
 
-/**
- * Error class for invalid transactions.
- */
 export class InvalidTransaction extends TransactionServiceError {
   error: any;
 
-  constructor(message: string, details: { error: any }) {
-    super(message);
+  constructor(message: string, details: { error?: any; transaction?: any }) {
+    super(message, details.transaction);
     this.error = details.error;
   }
 }
