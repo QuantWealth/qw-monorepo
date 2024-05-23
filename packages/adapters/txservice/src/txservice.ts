@@ -47,7 +47,7 @@ class TransactionService {
 
     for (let providerUrl of providers) {
       try {
-        const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+        const provider = this.makeProvider(providerUrl);
         response = await provider.call({
           to: txDetails.to,
           data: txDetails.data,
@@ -62,7 +62,7 @@ class TransactionService {
       }
     }
 
-    throw new InvalidTransaction("Failed to dispatch read transaction", { error });
+    throw new InvalidTransaction("Failed to dispatch read transaction.", { error });
   }
 
   /**
@@ -101,7 +101,7 @@ class TransactionService {
 
     for (let providerUrl of providers) {
       try {
-        const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+        const provider = this.makeProvider(providerUrl);
         const gasPrice = previousTransaction ? transaction.gasPrice : await this.getGasPrice(provider, config);
 
         transaction = {
@@ -124,7 +124,7 @@ class TransactionService {
       }
     }
 
-    throw new InvalidTransaction("Failed to dispatch transaction", { error });
+    throw new InvalidTransaction("Failed to dispatch write transaction.", { error });
   }
 
   /**
@@ -136,7 +136,8 @@ class TransactionService {
   private async monitor(transaction: Transaction, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
     const { chainId } = transaction;
     const config = this.config[chainId];
-    const provider = new ethers.providers.JsonRpcProvider(config.providers[0]);
+    // TODO: Use the shuffled providers, iterate through the random list.
+    const provider = this.makeProvider(config.providers[0]);
 
     let confirmations = 0;
     let retries = 0;
@@ -265,6 +266,15 @@ class TransactionService {
    */
   private spawnMonitorThread(transaction: any, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
     setTimeout(() => this.monitor(transaction, callback, originalMethod), 0);
+  }
+
+  /**
+   * Creates an instance of ethers.providers.JsonRpcProvider.
+   * @param providerUrl - The URL of the provider.
+   * @returns An instance of ethers.providers.JsonRpcProvider.
+   */
+  private makeProvider(providerUrl: string): ethers.providers.JsonRpcProvider {
+    return new ethers.providers.JsonRpcProvider(providerUrl);
   }
 }
 
