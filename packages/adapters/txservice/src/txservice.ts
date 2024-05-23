@@ -1,7 +1,7 @@
 import { ethers, providers } from "ethers";
 import { TransactionServiceConfig, validateConfig } from "./config";
 import { TransactionStorage } from "./storage";
-import { RpcFailure, InvalidTransaction } from "./errors";
+import { TransactionServiceError, RpcFailure, InvalidTransaction } from "./errors";
 import { TransactionState } from "./state";
 import { Transaction } from "./transaction";
 
