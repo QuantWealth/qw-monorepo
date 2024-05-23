@@ -1,7 +1,7 @@
 import { ethers, providers } from "ethers";
 import { TransactionServiceConfig, validateConfig } from "./config";
 import { TransactionStorage } from "./storage";
-import { TransactionServiceError, RpcFailure, InvalidTransaction } from "./errors";
+import { TransactionServiceError, RpcFailure, InvalidTransaction, DispatchFailure } from "./errors";
 import { TransactionState } from "./state";
 import { Transaction } from "./transaction";
 
@@ -89,6 +89,8 @@ class TransactionService {
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
 
+    console.debug("Dispatching transaction:", txDetails, "using providers:", providers);
+
     let transaction: Transaction = {
       chainId,
       nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount("pending"),
@@ -112,10 +114,12 @@ class TransactionService {
 
         const response = await this.signer.sendTransaction(transaction);
         transaction.hash = response.hash;
-        transaction.response = response; // Store the ethers transaction response
+        transaction.response = response;
         this.storage.add(transaction);
+        console.debug("Transaction dispatched successfully:", transaction);
         return transaction;
       } catch (err) {
+        console.debug("Error dispatching transaction with provider:", providerUrl, err);
         if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
           error = new RpcFailure("RPC Failure", { providerUrls: [providerUrl], error: err, transaction });
         } else {
@@ -124,7 +128,8 @@ class TransactionService {
       }
     }
 
-    throw new InvalidTransaction("Failed to dispatch write transaction.", { error });
+    // TODO: Use array of errors over each iteration above.
+    throw new DispatchFailure({ errors: [error], transaction });
   }
 
   /**
@@ -208,13 +213,23 @@ class TransactionService {
    * @returns The current gas price as a string.
    */
   private async getGasPrice(provider: providers.JsonRpcProvider, config: any) {
-    let gasPrice = await provider.getGasPrice();
-    if (gasPrice.gt(ethers.utils.parseUnits(config.gasPriceMax, "wei"))) {
-      gasPrice = ethers.utils.parseUnits(config.gasPriceMax, "wei");
-    } else if (gasPrice.lt(ethers.utils.parseUnits(config.gasPriceMin, "wei"))) {
-      gasPrice = ethers.utils.parseUnits(config.gasPriceMin, "wei");
+    let gasPrice;
+    try {
+      gasPrice = await provider.getGasPrice();
+      console.log("Fetched gas price:", gasPrice ? gasPrice.toString() : gasPrice);
+      const gasPriceMax = ethers.utils.parseUnits(config.gasPriceMax, "wei");
+      const gasPriceMin = ethers.utils.parseUnits(config.gasPriceMin, "wei");
+
+      if (gasPrice.gt(gasPriceMax)) {
+        gasPrice = gasPriceMax;
+      } else if (gasPrice.lt(gasPriceMin)) {
+        gasPrice = gasPriceMin;
+      }
+      return gasPrice.toString();
+    } catch (error) {
+      console.error("Error fetching gas price:", error);
+      throw new InvalidTransaction("Failed to fetch gas price.", { error });
     }
-    return gasPrice.toString();
   }
 
   /**

@@ -72,6 +72,8 @@ describe("TransactionService", () => {
 
     // Mock the provider's call method to return a dummy response.
     providerStub.call.resolves("dummy_response");
+    // Stub the getGasPrice method of the provider to return a valid gas price.
+    providerStub.getGasPrice.resolves(ethers.BigNumber.from("1000000000"));
 
     // Stub the makeProvider method of the TransactionService to return the mocked provider.
     stub(transactionService as any, "makeProvider").returns(providerStub);
@@ -118,6 +120,8 @@ describe("TransactionService", () => {
     const callback = (tx: Transaction) => {
       // Assert that the callback is called with the confirmed transaction.
       expect(tx.state).to.equal(TransactionState.Confirmed);
+      // Assert that the transaction receipt is as expected.
+      expect(tx.receipt).to.deep.equal(TEST_TX_RECEIPT);
     };
 
     // Call the write method of the TransactionService.

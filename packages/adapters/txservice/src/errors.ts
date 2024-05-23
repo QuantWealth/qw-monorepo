@@ -27,3 +27,12 @@ export class InvalidTransaction extends TransactionServiceError {
     this.error = details.error;
   }
 }
+
+export class DispatchFailure extends TransactionServiceError {
+  errors: any[];
+
+  constructor(details: { errors: any[]; transaction: any }) {
+    super("Failed to dispatch transaction due to error(s):", details.transaction);
+    this.errors = details.errors;
+  }
+}
