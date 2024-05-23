@@ -1,4 +1,4 @@
-import { WriteTransaction } from './transaction';
+import { Transaction } from './transaction';
 import { TransactionState } from './state';
 
 /**
@@ -6,13 +6,13 @@ import { TransactionState } from './state';
  * This will eventually be replaced with a database for persistent storage.
  */
 export class TransactionStorage {
-  private activeTransactions: WriteTransaction[] = [];
+  private activeTransactions: Transaction[] = [];
 
   /**
    * Adds a transaction to the active queue.
    * @param transaction - The transaction to add.
    */
-  add(transaction: WriteTransaction): void {
+  add(transaction: Transaction): void {
     this.activeTransactions.push(transaction);
     this.activeTransactions.sort((a, b) => a.nonce - b.nonce); // Ensure transactions are ordered by nonce.
   }
@@ -21,7 +21,7 @@ export class TransactionStorage {
    * Removes a transaction from the active queue.
    * @param transaction - The transaction to remove.
    */
-  remove(transaction: WriteTransaction): void {
+  remove(transaction: Transaction): void {
     this.activeTransactions = this.activeTransactions.filter(tx => tx.hash !== transaction.hash);
   }
 
@@ -30,7 +30,7 @@ export class TransactionStorage {
    * @param transactionHash - The hash of the transaction to retrieve.
    * @returns The transaction with the specified hash, or undefined if not found.
    */
-  get(transactionHash: string): WriteTransaction | undefined {
+  get(transactionHash: string): Transaction | undefined {
     return this.activeTransactions.find(tx => tx.hash === transactionHash);
   }
 

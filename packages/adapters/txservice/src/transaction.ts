@@ -1,18 +1,13 @@
 import { TransactionState } from "./state";
+import { BigNumber, ethers } from "ethers";
 
-// Base Transaction type for read transactions
-export interface ReadTransaction {
+// Transaction type for write transactions, used in tracking on-chain tx via local storage.
+export interface Transaction {
   chainId: number;
   nonce: number;
   gasLimit?: string;
   state: TransactionState;
-  error?: string;
-  confirmations?: number;
-}
-
-// Extended Transaction type for write transactions
-export interface WriteTransaction extends ReadTransaction {
-  hash?: string; // Optional property for write transactions
+  hash?: string;
   attempt?: number;
   bumps?: number;
   minedBlockNumber?: number;
@@ -20,4 +15,7 @@ export interface WriteTransaction extends ReadTransaction {
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+  error?: string;
+  confirmations?: number;
+  ethersTransaction?: ethers.providers.TransactionResponse;
 }
