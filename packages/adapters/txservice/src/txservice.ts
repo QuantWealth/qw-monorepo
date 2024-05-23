@@ -73,18 +73,6 @@ class TransactionService {
    * @returns A copy of the transaction object.
    */
   async write(txDetails: WriteTxDetails, callback: (tx: Transaction) => void, previousTransaction?: Transaction) {
-    const transaction = await this.dispatch(txDetails, previousTransaction);
-    this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
-    return { ...transaction };
-  }
-
-  /**
-   * Dispatches a transaction.
-   * @param txDetails - The transaction details.
-   * @param previousTransaction - The previous transaction details, if any.
-   * @returns The transaction object.
-   */
-  private async dispatch(txDetails: WriteTxDetails, previousTransaction?: Transaction) {
     const { chainId } = txDetails;
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
@@ -117,7 +105,8 @@ class TransactionService {
         transaction.response = response;
         this.storage.add(transaction);
         console.debug("Transaction dispatched successfully:", transaction);
-        return transaction;
+        this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
+        return { ...transaction };
       } catch (err) {
         console.debug("Error dispatching transaction with provider:", providerUrl, err);
         if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
