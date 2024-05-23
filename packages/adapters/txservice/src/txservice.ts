@@ -112,7 +112,7 @@ class TransactionService {
 
         const response = await this.signer.sendTransaction(transaction);
         transaction.hash = response.hash;
-        transaction.ethersTransaction = response; // Store the ethers transaction response
+        transaction.response = response; // Store the ethers transaction response
         this.storage.add(transaction);
         return transaction;
       } catch (err) {
@@ -146,6 +146,7 @@ class TransactionService {
       try {
         const receipt = await provider.getTransactionReceipt(transaction.hash!);
         if (receipt) {
+          transaction.receipt = receipt;
           transaction.confirmations = receipt.confirmations;
           if (!transaction.confirmations) {
             throw new InvalidTransaction("Transaction receipt did not have confirmations defined.", { transaction });

@@ -1,18 +1,41 @@
 import { expect } from "chai";
 import { createStubInstance, SinonStubbedInstance, stub, restore } from "sinon";
 import { ethers } from "ethers";
-import { TransactionService } from "../src/txservice";
 import { describe, beforeEach, afterEach, it } from "mocha";
+import { Transaction, TransactionState, TransactionService } from "../src";
+import { TransactionStorage } from "../src/storage";
+
+// Define a test transaction receipt.
+const TEST_TX_RECEIPT: ethers.providers.TransactionReceipt = {
+  blockHash: "0xabc",
+  blockNumber: 123,
+  byzantium: true,
+  confirmations: 1,
+  contractAddress: "0x123456789abcdef123456789abcdef123456789a",
+  cumulativeGasUsed: ethers.BigNumber.from(21000),
+  from: "0x1231231231231231231231231231231231231231",
+  gasUsed: ethers.BigNumber.from(21000),
+  logs: [],
+  logsBloom: "0x",
+  to: "0x4564564564564564564564564564564564564564",
+  transactionHash: "0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234567",
+  transactionIndex: 1,
+  status: 1,
+  effectiveGasPrice: ethers.BigNumber.from(1000000000),
+  type: 0,
+};
 
 describe("TransactionService", () => {
   let transactionService: TransactionService;
   let providerStub: SinonStubbedInstance<ethers.providers.JsonRpcProvider>;
   let signerStub: SinonStubbedInstance<ethers.Wallet>;
+  let storageStub: SinonStubbedInstance<TransactionStorage>;
 
   beforeEach(() => {
-    // Create stubs for the ethers provider and signer.
+    // Create stubs for the ethers provider, signer, and storage.
     providerStub = createStubInstance(ethers.providers.JsonRpcProvider);
     signerStub = createStubInstance(ethers.Wallet);
+    storageStub = createStubInstance(TransactionStorage);
 
     // Mock configuration.
     const config = {
@@ -31,6 +54,21 @@ describe("TransactionService", () => {
 
     // Initialize the TransactionService.
     transactionService = new TransactionService(config, signerStub);
+    (transactionService as any).storage = storageStub; // Replace storage with stub
+
+    // Mock the provider's sendTransaction method to return a dummy transaction response.
+    signerStub.sendTransaction.resolves({
+      hash: "0x123",
+      nonce: 1,
+      gasLimit: ethers.BigNumber.from(21000),
+      gasPrice: ethers.BigNumber.from(1000000000),
+      value: ethers.BigNumber.from(0),
+      data: "0x",
+      chainId: 1,
+      from: "0x0000000000000000000000000000000000000000",
+      confirmations: 0,
+      wait: async () => TEST_TX_RECEIPT,
+    });
 
     // Mock the provider's call method to return a dummy response.
     providerStub.call.resolves("dummy_response");
@@ -67,5 +105,32 @@ describe("TransactionService", () => {
       console.error("Error during read transaction:", error);
       throw error;
     }
+  });
+
+  it("should perform a write transaction and return the transaction object", async () => {
+    const txDetails = {
+      chainId: 1,
+      to: "0x0000000000000000000000000000000000000000",
+      value: "1000",
+      data: "0x"
+    };
+
+    const callback = (tx: Transaction) => {
+      // Assert that the callback is called with the confirmed transaction.
+      expect(tx.state).to.equal(TransactionState.Confirmed);
+    };
+
+    // Call the write method of the TransactionService.
+    const transaction = await transactionService.write(txDetails, callback);
+
+    // Assert that the returned transaction object has the expected properties.
+    expect(transaction).to.include({
+      chainId: 1,
+      gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
+      state: TransactionState.Submitted,
+    });
+
+    // Assert that the storage's add method was called with the transaction.
+    expect(storageStub.add.calledOnceWith(transaction)).to.be.true;
   });
 });

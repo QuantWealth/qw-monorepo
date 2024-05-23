@@ -1,5 +1,5 @@
 import { TransactionState } from "./state";
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 
 // Transaction type for write transactions, used in tracking on-chain tx via local storage.
 export interface Transaction {
@@ -17,5 +17,6 @@ export interface Transaction {
   maxPriorityFeePerGas?: string;
   error?: string;
   confirmations?: number;
-  ethersTransaction?: ethers.providers.TransactionResponse;
+  response?: ethers.providers.TransactionResponse;
+  receipt?: ethers.providers.TransactionReceipt;
 }
