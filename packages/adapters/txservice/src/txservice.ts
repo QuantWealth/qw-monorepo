@@ -1,15 +1,18 @@
 import { ethers, providers } from "ethers";
 import { TransactionServiceConfig, validateConfig } from "./config";
 import { TransactionStorage } from "./storage";
-import { TransactionServiceError, RpcFailure, InvalidTransaction } from "./errors";
+import { RpcFailure, InvalidTransaction } from "./errors";
 import { TransactionState } from "./state";
 import { Transaction } from "./transaction";
 
-interface TxDetails {
+interface ReadTxDetails {
   chainId: number;
   to: string;
-  value: string;
   data: string;
+}
+
+interface WriteTxDetails extends ReadTxDetails {
+  value: string;
 }
 
 class TransactionService {
@@ -32,10 +35,9 @@ class TransactionService {
   /**
    * Performs a read transaction.
    * @param txDetails - The transaction details.
-   * @param callback - The callback function to execute once the transaction is confirmed.
    * @returns A promise that resolves to the response of the read transaction.
    */
-  async read(txDetails: TxDetails, callback: (response: any) => void) {
+  async read(txDetails: ReadTxDetails): Promise<any> {
     const { chainId } = txDetails;
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
@@ -49,9 +51,7 @@ class TransactionService {
         response = await provider.call({
           to: txDetails.to,
           data: txDetails.data,
-          value: txDetails.value,
         });
-        callback(response);
         return response;
       } catch (err) {
         if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
@@ -72,8 +72,8 @@ class TransactionService {
    * @param previousTransaction - The previous transaction details, if any.
    * @returns A copy of the transaction object.
    */
-  async write(txDetails: TxDetails, callback: (tx: Transaction) => void, previousTransaction?: Transaction) {
-    const transaction = await this.dispatch(txDetails, true, previousTransaction);
+  async write(txDetails: WriteTxDetails, callback: (tx: Transaction) => void, previousTransaction?: Transaction) {
+    const transaction = await this.dispatch(txDetails, previousTransaction);
     this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
     return { ...transaction };
   }
@@ -81,11 +81,10 @@ class TransactionService {
   /**
    * Dispatches a transaction.
    * @param txDetails - The transaction details.
-   * @param isWrite - Indicates if the transaction is a write transaction.
    * @param previousTransaction - The previous transaction details, if any.
    * @returns The transaction object.
    */
-  private async dispatch(txDetails: TxDetails, isWrite: boolean, previousTransaction?: Transaction) {
+  private async dispatch(txDetails: WriteTxDetails, previousTransaction?: Transaction) {
     const { chainId } = txDetails;
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
@@ -95,7 +94,7 @@ class TransactionService {
       nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount("pending"),
       gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
       state: TransactionState.Submitted,
-      ...(isWrite && previousTransaction ? { gasPrice: this.bumpGasPrice(previousTransaction.gasPrice!, config.gasPriceBump) } : {})
+      ...(previousTransaction ? { gasPrice: this.bumpGasPrice(previousTransaction.gasPrice!, config.gasPriceBump) } : {})
     };
 
     let error: any;
@@ -105,19 +104,17 @@ class TransactionService {
         const provider = new ethers.providers.JsonRpcProvider(providerUrl);
         const gasPrice = previousTransaction ? transaction.gasPrice : await this.getGasPrice(provider, config);
 
-        if (isWrite) {
-          transaction = {
-            ...transaction,
-            gasPrice,
-            nonce: transaction.nonce ?? await this.signer.getTransactionCount("pending"),
-          };
+        transaction = {
+          ...transaction,
+          gasPrice,
+          nonce: transaction.nonce ?? await this.signer.getTransactionCount("pending"),
+        };
 
-          const response = await this.signer.sendTransaction(transaction);
-          transaction.hash = response.hash;
-          transaction.ethersTransaction = response; // Store the ethers transaction response
-          this.storage.add(transaction);
-          return transaction;
-        }
+        const response = await this.signer.sendTransaction(transaction);
+        transaction.hash = response.hash;
+        transaction.ethersTransaction = response; // Store the ethers transaction response
+        this.storage.add(transaction);
+        return transaction;
       } catch (err) {
         if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
           error = new RpcFailure("RPC Failure", { providerUrls: [providerUrl], error: err, transaction });
@@ -242,17 +239,13 @@ class TransactionService {
    */
   private async fillNonceGap(chainId: number, targetNonce: number) {
     const address = await this.signer.getAddress();
-    const txDetails: TxDetails = {
+    const txDetails: WriteTxDetails = {
       chainId: chainId,
       to: address,
       value: "0",
       data: "0x"
     };
-    await this.write(
-      txDetails,
-      () => {}, // NOTE: Empty callback as there's no need to pass info from this execution to any consumer.
-      { chainId, nonce: targetNonce, state: TransactionState.Pending }
-    );
+    await this.write(txDetails, () => {}, { chainId, nonce: targetNonce, state: TransactionState.Pending });
   }
 
   /**
