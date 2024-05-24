@@ -4,7 +4,10 @@ import { ethers } from "ethers";
 // Transaction type for write transactions, used in tracking on-chain tx via local storage.
 export interface Transaction {
   chainId: number;
-  nonce: number;
+  to: string;
+  data: string;
+  value: string;
+  nonce?: number;
   gasLimit?: string;
   state: TransactionState;
   hash?: string;

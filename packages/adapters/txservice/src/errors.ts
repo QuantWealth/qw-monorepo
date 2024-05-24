@@ -1,4 +1,5 @@
 export abstract class TransactionServiceError extends Error {
+  IS_RPC_ERR: boolean = false;
   transaction?: any;
 
   constructor(message: string, transaction?: any) {
@@ -12,7 +13,7 @@ export class RpcFailure extends TransactionServiceError {
   providerUrls: string[];
   error: any;
 
-  constructor(message: string, details: { providerUrls: string[]; error?: any; transaction?: any }) {
+  constructor(message: string, details: { provider?: string, providerUrls: string[]; error?: any; transaction?: any }) {
     super(message, details.transaction);
     this.providerUrls = details.providerUrls;
     this.error = details.error;
@@ -29,6 +30,7 @@ export class InvalidTransaction extends TransactionServiceError {
 }
 
 export class DispatchFailure extends TransactionServiceError {
+  IS_RPC_ERR: boolean = true;
   errors: any[];
 
   constructor(details: { errors: any[]; transaction: any }) {

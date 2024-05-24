@@ -68,11 +68,11 @@ class TransactionService {
   /**
    * Performs a write transaction.
    * @param txDetails - The transaction details.
-   * @param callback - The callback function to execute once the transaction is confirmed.
    * @param previousTransaction - The previous transaction details, if any.
+   * TODO: missing nonce arg
    * @returns A copy of the transaction object.
    */
-  async write(txDetails: WriteTxDetails, callback: (tx: Transaction) => void, previousTransaction?: Transaction) {
+  async write(txDetails: WriteTxDetails, targetNonce?: number): Promise<Transaction | TransactionServiceError> {
     const { chainId } = txDetails;
     const config = this.config[chainId];
     const providers = this.getRandomProviders(config.providers, config.targetProvidersPerCall);
@@ -81,44 +81,73 @@ class TransactionService {
 
     let transaction: Transaction = {
       chainId,
-      nonce: previousTransaction ? previousTransaction.nonce : await this.signer.getTransactionCount("pending"),
+      to: txDetails.to,
+      data: txDetails.data,
+      value: txDetails.value,
+      // nonce: await this.signer.getTransactionCount("pending"),
       gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
       state: TransactionState.Submitted,
-      ...(previousTransaction ? { gasPrice: this.bumpGasPrice(previousTransaction.gasPrice!, config.gasPriceBump) } : {})
     };
+    if (targetNonce) {
+      transaction.nonce = targetNonce;
+    }
 
-    let error: any;
+    let errors: TransactionServiceError[] = [];
+    let providerIndex: number = 0;
 
-    for (let providerUrl of providers) {
+    // NOTE: We use a while loop instead of a for loop here since we don't want to iterate if we're getting a timeout.
+    while (true) {
+      const providerUrl = providers[providerIndex];
+      const provider = this.makeProvider(providerUrl);
+
+      // Fetch gas price.
       try {
-        const provider = this.makeProvider(providerUrl);
-        const gasPrice = previousTransaction ? transaction.gasPrice : await this.getGasPrice(provider, config);
+        // TODO: Would be neat to not make the first provider twice here and under the while(true)...
+        transaction.gasPrice = await this.getGasPrice(provider, config);
+      } catch (err) {
+        throw new RpcFailure(
+          "Gas price fetch failed: invalid transaction.",
+          { provider: providers[providerIndex], providerUrls: providers, error: err, transaction }
+        );
+      }
 
-        transaction = {
-          ...transaction,
-          gasPrice,
-          nonce: transaction.nonce ?? await this.signer.getTransactionCount("pending"),
-        };
+      transaction.nonce = transaction.nonce != undefined ? transaction.nonce : await this.signer.getTransactionCount("pending");
 
-        const response = await this.signer.sendTransaction(transaction);
+      try {
+        this.signer.connect(provider);
+        const request: ethers.providers.TransactionRequest = {
+          to: transaction.to,
+          data: transaction.data,
+          value: transaction.value,
+        }
+        const response = await this.signer.sendTransaction(request);
         transaction.hash = response.hash;
         transaction.response = response;
         this.storage.add(transaction);
         console.debug("Transaction dispatched successfully:", transaction);
-        this.spawnMonitorThread(transaction, callback, this.write.bind(this, txDetails, callback));
-        return { ...transaction };
+        return await this.monitor(provider, transaction);
       } catch (err) {
         console.debug("Error dispatching transaction with provider:", providerUrl, err);
+
+        // TODO: Handle NONCE_EXPIRED error!
         if (err.code === "NETWORK_ERROR" || err.code === "SERVER_ERROR") {
-          error = new RpcFailure("RPC Failure", { providerUrls: [providerUrl], error: err, transaction });
+          errors.push(new RpcFailure("RPC Failure", { providerUrls: [providerUrl], error: err, transaction }));
+        } else if (err.code === "TIMEOUT") {
+          // TODO: Check if there's other cases where gas price is insufficient.
+          // We timed out, we should bump gas price and continue to avoid incrementing provider index.
+          transaction.gasPrice = this.bumpGasPrice(transaction.gasPrice!, config.gasPriceBump);
+          continue;
         } else {
-          error = new InvalidTransaction("Invalid Transaction", { error: err, transaction });
+          errors.push(new InvalidTransaction("Invalid transaction.", { error: err, transaction }));
+          break;
         }
       }
+
+      providerIndex++;
     }
 
     // TODO: Use array of errors over each iteration above.
-    throw new DispatchFailure({ errors: [error], transaction });
+    throw new DispatchFailure({ errors, transaction });
   }
 
   /**
@@ -127,11 +156,12 @@ class TransactionService {
    * @param callback - The callback function to execute once the transaction is confirmed.
    * @param originalMethod - The original method to call if the transaction needs to be retried.
    */
-  private async monitor(transaction: Transaction, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
+  private async monitor(
+    provider: ethers.providers.JsonRpcProvider,
+    transaction: Transaction,
+  ): Promise<Transaction | TransactionServiceError> {
     const { chainId } = transaction;
     const config = this.config[chainId];
-    // TODO: Use the shuffled providers, iterate through the random list.
-    const provider = this.makeProvider(config.providers[0]);
 
     let confirmations = 0;
     let retries = 0;
@@ -148,13 +178,11 @@ class TransactionService {
           if (transaction.confirmations >= config.confirmationsRequired) {
             transaction.state = TransactionState.Confirmed;
             this.storage.remove(transaction);
-            callback(transaction);
-            return;
+            return transaction;
           } else if (receipt.status === 0) {
             transaction.state = TransactionState.Reverted;
             this.storage.remove(transaction);
-            callback(transaction);
-            return;
+            return transaction;
           } else if (receipt.blockNumber && !transaction.hash) {
             transaction.hash = receipt.transactionHash;
           }
@@ -166,8 +194,7 @@ class TransactionService {
         if (retries >= (config.maxRetries || 5)) {
           transaction.state = TransactionState.Failed;
           this.storage.remove(transaction);
-          callback(new RpcFailure("RPC Failure after retries", { providerUrls: [config.providers[0]], error, transaction }));
-          return;
+          return new RpcFailure("RPC Failure after retries.", { providerUrls: [config.providers[0]], error, transaction });
         }
       }
       await this.sleep(config.timeout);
@@ -175,13 +202,10 @@ class TransactionService {
 
     if (parseFloat((transaction.gasPrice!)) >= parseFloat(config.gasPriceMax)) {
       await this.fillNonceGap(chainId, transaction.nonce);
-      callback(new InvalidTransaction("Gas price hit maximum, transaction failed", { transaction }));
-      return;
+      return new InvalidTransaction("Gas price hit maximum, transaction failed.", { transaction });
     }
 
-    if (transaction.state === TransactionState.Failed) {
-      await originalMethod(transaction);
-    }
+    return transaction;
   }
 
   /**
@@ -251,7 +275,7 @@ class TransactionService {
       value: "0",
       data: "0x"
     };
-    await this.write(txDetails, () => {}, { chainId, nonce: targetNonce, state: TransactionState.Pending });
+    await this.write(txDetails, { chainId, nonce: targetNonce, state: TransactionState.Pending });
   }
 
   /**
@@ -261,16 +285,6 @@ class TransactionService {
    */
   private sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Spawns a monitor thread for a transaction.
-   * @param transaction - The transaction to monitor.
-   * @param callback - The callback function to execute once the transaction is confirmed.
-   * @param originalMethod - The original method to call if the transaction needs to be retried.
-   */
-  private spawnMonitorThread(transaction: any, callback: (tx: any | TransactionServiceError) => void, originalMethod: (previousTransaction?: any) => void) {
-    setTimeout(() => this.monitor(transaction, callback, originalMethod), 0);
   }
 
   /**
