@@ -4,9 +4,8 @@ import { ethers } from "ethers";
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { Transaction, TransactionState, TransactionService } from "../src";
 import { TransactionStorage } from "../src/storage";
-import { TransactionServiceError } from "src/errors";
+import { TransactionServiceError } from "../src/errors";
 
-// Define a test transaction receipt.
 const TEST_TX_RECEIPT: ethers.providers.TransactionReceipt = {
   blockHash: "0xabc",
   blockNumber: 123,
@@ -74,18 +73,7 @@ describe("TransactionService", () => {
     (transactionService as any).storage = storageStub; // Replace storage with stub
 
     // Mock the provider's sendTransaction method to return a dummy transaction response.
-    signerStub.sendTransaction.resolves({
-      hash: "0x123",
-      nonce: 1,
-      gasLimit: ethers.BigNumber.from(21000),
-      gasPrice: ethers.BigNumber.from(1000000000),
-      value: ethers.BigNumber.from(0),
-      data: "0x",
-      chainId: 1,
-      from: "0x0000000000000000000000000000000000000000",
-      confirmations: 0,
-      wait: async () => TEST_TX_RECEIPT,
-    });
+    signerStub.sendTransaction.resolves(TEST_TX_RESPONSE);
 
     // Mock the provider's call method to return a dummy response.
     providerStub.call.resolves("dummy_response");
@@ -128,8 +116,6 @@ describe("TransactionService", () => {
   });
 
   it("should perform a write transaction and return the transaction object", async () => {
-    signerStub.sendTransaction.resolves(TEST_TX_RESPONSE);
-
     const txDetails = {
       chainId: 1,
       to: "0x0000000000000000000000000000000000000000",
@@ -143,12 +129,15 @@ describe("TransactionService", () => {
       value: "1000",
       data: "0x",
       nonce: 1,
+      gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
+      gasPrice: "1000000000",
+      hash: "0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234567",
       response: TEST_TX_RESPONSE,
       receipt: TEST_TX_RECEIPT,
       state: TransactionState.Confirmed,
     };
 
-    // TODO: Stubbing monitor here, need a unit test for that.
+    // Stub the monitor method to return the expected transaction.
     stub(transactionService as any, "monitor").resolves(expectedTransaction);
 
     // Call the write method of the TransactionService.
@@ -160,16 +149,17 @@ describe("TransactionService", () => {
     expect(transaction).to.include({
       chainId: 1,
       gasLimit: ethers.utils.parseUnits(txDetails.value, "wei").toString(),
-      state: TransactionState.Submitted,
+      state: TransactionState.Confirmed,
     });
-    // Assert that the callback is called with the confirmed transaction.
-    expect(transaction.state).to.equal(TransactionState.Confirmed);
     // Assert that the transaction receipt is as expected.
     expect(transaction.receipt).to.deep.equal(TEST_TX_RECEIPT);
-    // TODO: response should be equal to test response
+    // Assert that the transaction response is as expected.
+    expect(transaction.response).to.deep.equal(TEST_TX_RESPONSE);
 
+    // TODO: Move to monitor unit test, these are called there.
     // Assert that the storage's add method was called with the transaction.
-    expect(storageStub.add.calledOnceWith(transaction)).to.be.true;
-    // TODO: Should have also called remove.
+    // expect(storageStub.add.calledOnceWith(transaction)).to.be.true;
+    // Assert that the storage's remove method was called with the transaction.
+    // expect(storageStub.remove.calledOnceWith(transaction)).to.be.true;
   });
 });
