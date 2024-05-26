@@ -1,0 +1,34 @@
+{
+  "name": "qw-txservice",
+  "version": "0.0.1",
+  "description": "Transaction write/read service for a signer configured across multiple chains.",
+  "author": "QuantWealth",
+  "license": "MIT",
+  "main": "index.ts",
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "test": "ts-mocha --check-leaks --exit --timeout 60000 'test/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.25.21",
+    "ethers": "5.7.2"
+  },
+  "devDependencies": {
+    "@types/chai": "4.3.4",
+    "@types/chai-as-promised": "7.1.5",
+    "@types/chai-subset": "1.3.3",
+    "@types/mocha": "10.0.1",
+    "@types/sinon": "10.0.13",
+    "@typescript-eslint/eslint-plugin": "5.52.0",
+    "chai": "4.3.7",
+    "chai-as-promised": "7.1.1",
+    "chai-subset": "1.6.0",
+    "eslint": "8.34.0",
+    "mocha": "10.2.0",
+    "sinon": "15.0.1",
+    "ts-mocha": "10.0.0",
+    "typescript": "4.9.5"
+  }
+}
