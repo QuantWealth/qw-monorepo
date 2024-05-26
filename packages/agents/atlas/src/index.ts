@@ -1,8 +1,8 @@
-import { makePipeline } from './pipeline';
+import { makeBatching } from './poller';
 import { bootstrap } from './server';
 
 const setup = async () => {
-  makePipeline();
+  makeBatching();
   bootstrap();
 };
 
