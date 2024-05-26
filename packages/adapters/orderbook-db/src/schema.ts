@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-  
+
 /// Order Schema
 export interface IOrder {
   id: string;
@@ -24,7 +24,7 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   status: { type: String, enum: ["P", "E", "C"], required: true },
 });
 // Pre-save middleware to set the order ID.
-OrderSchema.pre('save', function(next) {
+OrderSchema.pre("save", function (next) {
   // Assuming there is a 'signer' field or similar in the order data.
   // TODO: If 'signer' is not appropriate, adjust accordingly.
   // Set the ID as a hash of (timestamp, signer).
@@ -37,7 +37,23 @@ OrderSchema.pre('save', function(next) {
   next();
 });
 
+/// User Schema
+export interface IUser {
+  id: string;
+  wallet: string;
+  deployed: boolean;
+}
+const UserSchema = new mongoose.Schema<IUser>(
+  {
+    id: { type: String, required: true, unique: true },
+    wallet: { type: String, required: true },
+    deployed: { type: Boolean, required: true },
+  },
+  { timestamps: true }
+);
+
 /// Models
 const OrderModel = mongoose.model<IOrder>("Order", OrderSchema);
+const UserModel = mongoose.model<IUser>("User", UserSchema);
 
-export { OrderModel };
+export { OrderModel, UserModel };

@@ -1,4 +1,4 @@
-import { IOrder, OrderModel } from "./schema";
+import { IOrder, IUser, OrderModel, UserModel } from "./schema";
 
 /**
  * Retrieves all orders associated with a specific user wallet.
@@ -73,4 +73,12 @@ function getOrders(start: number, end: number, status?: string, distribution?: b
   return OrderModel.find(query);
 }
 
-export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders };
+function getUser(id: string) {
+  return UserModel.findOne({ id });
+}
+
+function createUser(user: IUser) {
+  return UserModel.create(user);
+}
+
+export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders, getUser, createUser };
