@@ -28,6 +28,9 @@ export class UserBalanceQueryDto {
   @IsOptional()
   @ApiProperty({
     enum: Sort,
+    enumName: 'Sort',
+    required: false,
+    example: Sort.ASCENDING,
   })
   sort: Sort = Sort.ASCENDING;
 

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import Safe, { PredictedSafeProps } from '@safe-global/protocol-kit';
-import { TOKEN_BALANCE } from 'src/common/constants';
-import { TTokenBalance } from 'src/common/types/balance';
+import { BalancesResponse, CovalentClient } from '@covalenthq/client-sdk';
+import { Transaction } from 'src/common/dto/transaction';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
-import { Transaction } from 'src/common/dto/transaction';
 
 @Injectable()
 export class UserService {
@@ -13,9 +12,17 @@ export class UserService {
    * It retrieves the token balance of the user
    * @returns token balance array
    */
-  getUserBalance(query: UserBalanceQueryDto): Array<TTokenBalance> {
-    console.log(query);
-    return TOKEN_BALANCE;
+  async getUserBalance(query: UserBalanceQueryDto): Promise<BalancesResponse> {
+    const client = new CovalentClient('ckey_ff063ff59c7242dca5076e02ffc');
+    const resp = await client.BalanceService.getTokenBalancesForWalletAddress(
+      'eth-sepolia',
+      query.walletAddress,
+      {
+        quoteCurrency: 'USD',
+        nft: false,
+      },
+    );
+    return resp.data;
   }
 
   /**

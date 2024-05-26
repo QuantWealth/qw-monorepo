@@ -42,7 +42,7 @@ export class ResponseInterceptor implements NestInterceptor {
     const response = ctx.getResponse();
 
     const statusCode = response.statusCode;
-    console.log('statusCode', res);
+
     return {
       success: true,
       statusCode,
@@ -50,3 +50,13 @@ export class ResponseInterceptor implements NestInterceptor {
     };
   }
 }
+
+declare global {
+  interface BigInt {
+    toJSON(): string;
+  }
+}
+
+BigInt.prototype.toJSON = function () {
+  return String(this);
+};

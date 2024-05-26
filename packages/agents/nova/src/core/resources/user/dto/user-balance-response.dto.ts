@@ -1,11 +1,11 @@
+import { BalancesResponse } from '@covalenthq/client-sdk';
 import { ApiProperty } from '@nestjs/swagger';
 import { NovaResponse } from 'src/common/interfaces/nova-response.interface';
-import { Transaction } from 'src/common/dto/transaction';
 
-export class UserInitResponseDto implements NovaResponse {
+export class UserBalanceResponseDto implements NovaResponse {
   @ApiProperty({
     description: 'Response message',
-    example: 'User created successfully.',
+    example: 'Balance fetched successfully.',
   })
   message: string;
   @ApiProperty({
@@ -16,5 +16,5 @@ export class UserInitResponseDto implements NovaResponse {
   @ApiProperty({
     description: 'Response data',
   })
-  data: Transaction;
+  data: BalancesResponse;
 }

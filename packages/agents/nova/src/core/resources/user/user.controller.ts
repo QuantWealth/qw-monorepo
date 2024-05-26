@@ -1,3 +1,4 @@
+import { BalancesResponse } from '@covalenthq/client-sdk';
 import {
   Body,
   Controller,
@@ -13,10 +14,11 @@ import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
 import { UserInitResponseDto } from './dto/user-init-response.dto';
 import { UserService } from './user.service';
+import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
   /**
    * Retrieves user token balance
@@ -24,8 +26,15 @@ export class UserController {
    * @returns userTokenBalance array
    */
   @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Transaction for SA deployment',
+    type: UserBalanceResponseDto,
+  })
   @Get('balance')
-  getUserBalance(@Query() query: UserBalanceQueryDto) {
+  getUserBalance(
+    @Query() query: UserBalanceQueryDto,
+  ): Promise<BalancesResponse> {
     return this.userService.getUserBalance(query);
   }
 
