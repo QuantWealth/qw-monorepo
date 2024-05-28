@@ -17,45 +17,32 @@ const _getPredictedSafeConfig = (args: SafeSdkArgs): PredictedSafeProps => {
 
 }
 
-export const createSCW = async (args: CreateSafeSdkArgs): Promise<Transaction> => {
+export const initSCW = async (args: CreateSafeSdkArgs): Promise<Safe> => { 
     const predictedSafe = _getPredictedSafeConfig(args);
 
-    const safeSdk = await Safe.init({
+    return Safe.init({
         provider: args.rpc,
         predictedSafe,
     });
+}
 
-    if(await safeSdk.isSafeDeployed()) {
+export const createSCW = async (args: CreateSafeSdkArgs): Promise<Transaction> => {
+    if(await args.safe.isSafeDeployed()) {
         throw new Error('Safe already deployed');
     }
 
     const deploymentTransaction =
-        await safeSdk.createSafeDeploymentTransaction();
+        await args.safe.createSafeDeploymentTransaction();
 
     return deploymentTransaction;
 }
 
 
 export const getSCW = async (args: CreateSafeSdkArgs): Promise<string> => {
-    const predictedSafe = _getPredictedSafeConfig(args);
-
-    const safeSdk = await Safe.init({
-        provider: args.rpc,
-        predictedSafe,
-    });
-
-    const address = await safeSdk.getAddress();
-    console.log(address);
+    const address = await args.safe.getAddress();
     return address;
 }
 
 export const isSCWDeployed = async (args: CreateSafeSdkArgs): Promise<boolean> => {
-    const predictedSafe = _getPredictedSafeConfig(args);
-
-    const safeSdk = await Safe.init({
-        provider: args.rpc,
-        predictedSafe,
-    });
-
-    return await safeSdk.isSafeDeployed();
+    return await args.safe.isSafeDeployed();
 }

@@ -1,7 +1,7 @@
 import { BalancesResponse, CovalentClient } from '@covalenthq/client-sdk';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { IUser, UserModel } from 'qw-orderbook-db/dist/schema';
-import { createSCW, getSCW, isSCWDeployed } from 'qw-utils';
+import { initSCW, createSCW, getSCW, isSCWDeployed } from 'qw-utils';
 import { Transaction } from 'src/common/dto/transaction';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
@@ -47,18 +47,17 @@ export class UserService {
     // TODO: move to env
     const rpcUrl = 'https://1rpc.io/sepolia';
 
-    const hasSCW = await isSCWDeployed({ rpc: rpcUrl, address: walletAddress });
+    const safe = await initSCW({ rpc: rpcUrl, address: walletAddress });
+
+    const hasSCW = await isSCWDeployed({ safe });
 
     if (hasSCW) {
       throw new HttpException('SCW already deployed', HttpStatus.BAD_REQUEST);
     }
 
-    const deploymentTransaction = await createSCW({
-      rpc: rpcUrl,
-      address: walletAddress,
-    });
+    const deploymentTransaction = await createSCW({ safe });
 
-    const safeAddress = await getSCW({ rpc: rpcUrl, address: walletAddress });
+    const safeAddress = await getSCW({ safe });
 
     if ((await this.userModel.find({ id: walletAddress })).length > 0) {
       await this.userModel.updateOne(
@@ -87,6 +86,14 @@ export class UserService {
    * @returns transaction
    */
   async userData({ walletAddress }: UserDataQueryDto): Promise<IUser> {
-    return await this.userModel.findOne({ id: walletAddress });
+    const user = await this.userModel.findOne({ id: walletAddress });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    delete user.__v;
+    delete user._id;
+    return user;
   }
 }

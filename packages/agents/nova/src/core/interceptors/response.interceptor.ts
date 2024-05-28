@@ -33,7 +33,6 @@ export class ResponseInterceptor implements NestInterceptor {
       success: false,
       statusCode: status,
       message: exception.message,
-      data: exception,
     });
   }
 
