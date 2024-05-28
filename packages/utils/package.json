@@ -1,12 +1,17 @@
 {
   "name": "qw-utils",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc"
   },
   "dependencies": {
+    "@safe-global/api-kit": "^2.4.0",
+    "@safe-global/protocol-kit": "^4.0.0",
+    "@safe-global/safe-core-sdk-types": "^5.0.0",
     "ethers": "^6.12.1",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
