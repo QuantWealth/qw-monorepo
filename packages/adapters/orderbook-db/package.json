@@ -1,9 +1,11 @@
 {
   "name": "qw-orderbook-db",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
     "boot": "sh ./etc/boot-db",
     "station": "sh ./etc/station-db"
   },

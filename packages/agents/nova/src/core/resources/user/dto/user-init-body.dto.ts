@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 
 export class UserInitBodyDto {
   @IsString()
@@ -9,4 +9,14 @@ export class UserInitBodyDto {
     example: '0x0617b72940f105811F251967EE4fdD5E38f159d5',
   })
   walletAddress: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  @Length(1, 42)
+  @ApiProperty({
+    example: 'metamask',
+    required: false,
+  })
+  provider: string;
 }

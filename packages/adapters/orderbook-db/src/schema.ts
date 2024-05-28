@@ -41,13 +41,17 @@ OrderSchema.pre("save", function (next) {
 export interface IUser {
   id: string;
   wallet: string;
+  network: string;
   deployed: boolean;
+  providers: string[];
 }
 const UserSchema = new mongoose.Schema<IUser>(
   {
     id: { type: String, required: true, unique: true },
     wallet: { type: String, required: true },
+    network: { type: String, required: true },
     deployed: { type: Boolean, required: true },
+    providers: [{ type: String, required: true }],
   },
   { timestamps: true }
 );

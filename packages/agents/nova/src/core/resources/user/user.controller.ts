@@ -9,12 +9,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
+import { IUser } from 'qw-orderbook-db/dist/schema';
 import { Transaction } from 'src/common/dto/transaction';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
+import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
+import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
 import { UserInitResponseDto } from './dto/user-init-response.dto';
 import { UserService } from './user.service';
-import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
 
 @Controller('user')
 export class UserController {
@@ -39,9 +41,9 @@ export class UserController {
   }
 
   /**
-   * Retrieves user token balance
-   * @param {UserBalanceQueryDto} query - query params containing user wallet address and the way returned data should be arranged
-   * @returns userTokenBalance array
+   * Deploys SCW for user
+   * @param {UserInitBodyDto} body - body params containing user wallet address and wallet provider
+   * @returns transaction for SCW deployment
    */
   @HttpCode(HttpStatus.CREATED)
   @ApiResponse({
@@ -50,7 +52,23 @@ export class UserController {
     type: UserInitResponseDto,
   })
   @Post('init')
-  async userInit(@Body() query: UserInitBodyDto): Promise<Transaction> {
-    return await this.userService.userInit(query);
+  async userInit(@Body() body: UserInitBodyDto): Promise<Transaction> {
+    return await this.userService.userInit(body);
+  }
+
+  /**
+   * Retrieves user scw data
+   * @param {UserDataQueryDto} query - query params containing user wallet address
+   * @returns user data
+   */
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Transaction for SA deployment',
+    type: UserDataQueryDto,
+  })
+  @Get('data')
+  async userData(@Query() query: UserDataQueryDto): Promise<IUser> {
+    return await this.userService.userData(query);
   }
 }
