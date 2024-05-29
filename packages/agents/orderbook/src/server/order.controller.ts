@@ -9,31 +9,32 @@ export class OrderController {
 
   @Get('user/:wallet')
   getUserOrders(@Param('wallet') wallet: string) {
-    // TODO: Implement user auth
+    // TODO: Implement user auth.
     return this.orderService.getUserOrders(wallet);
   }
 
   @Get('signer/:signer')
   getUserOrdersBySigner(@Param('signer') signer: string) {
-    // TODO: Implement user auth
+    // TODO: Implement user auth.
     return this.orderService.getUserOrdersBySigner(signer);
   }
 
   @Post('submit')
   submitOrder(@Body() orderData: IOrder) {
-    // TODO: Implement user auth
+    // TODO: Implement user auth.
     return this.orderService.submitOrder(orderData);
   }
 
   @Put('execute/:id')
   @UseGuards(GuardianAuthGuard)
   executeOrder(@Param('id') id: string, @Body('hashes') hashes: string[]) {
+    // TODO: GuardianAuthGuard uses keys in plaintext, should be hashed and salted.
     return this.orderService.executeOrder(id, hashes);
   }
 
   @Delete('cancel/:id')
   cancelOrder(@Param('id') id: string) {
-    // TODO: Implement user auth
+    // TODO: Implement user auth.
     return this.orderService.cancelOrder(id);
   }
 
