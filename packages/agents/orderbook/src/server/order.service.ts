@@ -1,6 +1,17 @@
-import { Injectable } from "@nestjs/common";
-import { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders } from "./operations";
-import { IOrder } from "qw-orderbook-db";
+import { Injectable } from '@nestjs/common';
+import {
+  getUserOrders,
+  getUserOrdersBySigner,
+  submitOrder,
+  executeOrder,
+  cancelOrder,
+  getOrder,
+  getOrders,
+  getUser,
+  createUser,
+  IOrder,
+  IUser
+} from 'qw-orderbook-db';
 
 @Injectable()
 export class OrderService {
@@ -16,8 +27,8 @@ export class OrderService {
     return submitOrder(orderData);
   }
 
-  executeOrder(orderId: string) {
-    return executeOrder(orderId);
+  executeOrder(orderId: string, hashes: string[]) {
+    return executeOrder(orderId, hashes);
   }
 
   cancelOrder(orderId: string) {
@@ -30,5 +41,13 @@ export class OrderService {
 
   getOrders(start: number, end: number, status?: string, distribution?: boolean) {
     return getOrders(start, end, status, distribution);
+  }
+
+  getUser(id: string) {
+    return getUser(id);
+  }
+
+  createUser(user: IUser) {
+    return createUser(user);
   }
 }
