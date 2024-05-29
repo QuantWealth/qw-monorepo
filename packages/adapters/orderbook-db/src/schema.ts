@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 /// Order Schema
-export interface IOrder {
+interface IOrder {
   id: string;
   signer: string;
   wallet: string;
@@ -12,6 +12,7 @@ export interface IOrder {
   signatures: string[];
   status: "P" | "E" | "C"; // Pending, Executed, Canceled
 }
+
 const OrderSchema = new mongoose.Schema<IOrder>({
   id: { type: String, required: true, unique: true },
   signer: { type: String, required: true },
@@ -23,6 +24,7 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   signatures: [{ type: String, required: true }],
   status: { type: String, enum: ["P", "E", "C"], required: true },
 });
+
 // Pre-save middleware to set the order ID.
 OrderSchema.pre("save", function (next) {
   // Assuming there is a 'signer' field or similar in the order data.
@@ -56,8 +58,20 @@ const UserSchema = new mongoose.Schema<IUser>(
   { timestamps: true }
 );
 
+/// Execution Schema
+interface IExecution {
+  orderId: string;
+  executedAt: number;
+}
+
+const ExecutionSchema = new mongoose.Schema<IExecution>({
+  orderId: { type: String, required: true, unique: true },
+  executedAt: { type: Number, required: true }
+});
+
 /// Models
 const OrderModel = mongoose.model<IOrder>("Order", OrderSchema);
+const ExecutionModel = mongoose.model<IExecution>("Execution", ExecutionSchema);
 const UserModel = mongoose.model<IUser>("User", UserSchema);
 
-export { OrderModel, UserModel };
+export { OrderModel, ExecutionModel, IOrder, IExecution, UserModel };
