@@ -1,8 +1,18 @@
 import { bootstrap } from './server';
+import { loadConfig } from './config';
+import { startPolling } from './poller';
 
 const setup = async () => {
-  // initiate the server
+  // Load the configuration
+  const config = loadConfig();
+
+  // Initialize the server
   bootstrap();
+
+  // Start the polling loop if handleExecutions is true
+  if (config.handleExecutions) {
+    startPolling();
+  }
 };
 
 setup().catch((error) => {
