@@ -5,24 +5,34 @@ interface IOrder {
   id: string;
   signer: string;
   wallet: string;
-  timestamp: number;
+  timestamps: {
+    placed: number;
+    executed?: number;
+    cancelled?: number;
+  };
   dapps: string[];
   distribution: boolean;
   amounts: string[];
   signatures: string[];
   status: "P" | "E" | "C"; // Pending, Executed, Canceled
+  hashes?: string[]; // Optional array of transaction hashes
 }
 
 const OrderSchema = new mongoose.Schema<IOrder>({
   id: { type: String, required: true, unique: true },
   signer: { type: String, required: true },
   wallet: { type: String, required: true },
-  timestamp: { type: Number, required: true },
+  timestamps: {
+    placed: { type: Number, required: true },
+    executed: { type: Number },
+    cancelled: { type: Number }
+  },
   dapps: [{ type: String, required: true }],
   distribution: { type: Boolean, required: true },
   amounts: [{ type: String, required: true }],
   signatures: [{ type: String, required: true }],
   status: { type: String, enum: ["P", "E", "C"], required: true },
+  hashes: [{ type: String }]
 });
 
 // Pre-save middleware to set the order ID.
@@ -35,12 +45,13 @@ OrderSchema.pre("save", function (next) {
     this.status = "P";
     // TODO: Include once utils are ready:
     // this.id = keccak256(`${this.timestamp}-${this.wallet}`);
+    this.timestamps.placed = Date.now();
   }
   next();
 });
 
 /// User Schema
-export interface IUser {
+interface IUser {
   id: string;
   wallet: string;
   network: string;
@@ -58,20 +69,8 @@ const UserSchema = new mongoose.Schema<IUser>(
   { timestamps: true }
 );
 
-/// Execution Schema
-interface IExecution {
-  orderId: string;
-  executedAt: number;
-}
-
-const ExecutionSchema = new mongoose.Schema<IExecution>({
-  orderId: { type: String, required: true, unique: true },
-  executedAt: { type: Number, required: true }
-});
-
 /// Models
 const OrderModel = mongoose.model<IOrder>("Order", OrderSchema);
-const ExecutionModel = mongoose.model<IExecution>("Execution", ExecutionSchema);
 const UserModel = mongoose.model<IUser>("User", UserSchema);
 
-export { OrderModel, ExecutionModel, IOrder, IExecution, UserModel };
+export { OrderModel, IOrder, UserModel, IUser };
