@@ -12,10 +12,11 @@
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
     "@nestjs/mongoose": "^10.0.0",
-    "qw-orderbook-db": "file:../../adapters/orderbook-db",
+    "@nestjs/platform-express": "^10.0.0",
+    "@safe-global/relay-kit": "^3.0.1",
     "mongoose": "^8.3.4",
+    "qw-orderbook-db": "file:../../adapters/orderbook-db",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
   },
@@ -24,11 +25,11 @@
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
     "@types/node": "^20.12.11",
-    "typescript": "^5.4.5",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
   }
 }
