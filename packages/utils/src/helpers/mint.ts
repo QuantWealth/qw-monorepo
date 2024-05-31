@@ -27,12 +27,10 @@ const ABI = [
   }
 ];
 
-const erc20Interface = new Interface(ABI);
-
 interface MintParams {
   contractAddress: string;
   amount: BigInt;
-  rpcUrl: string;
+  provider: ethers.JsonRpcApiProvider;
   recipientAddress: string;
 }
 
@@ -42,11 +40,8 @@ interface MintTransactionResponse {
   data: string;
 }
 
-export const mint: (params: MintParams) => Promise<MintTransactionResponse> = async ({ contractAddress, amount, rpcUrl, recipientAddress }) => {
+export const mint: (params: MintParams) => Promise<MintTransactionResponse> = async ({ contractAddress, amount, provider, recipientAddress }) => {
   try {
-    // Connect to the Ethereum network
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
-  
     // Connect to the ERC-20 contract
     const erc20Contract = new ethers.Contract(contractAddress, ABI, provider);
     const data = erc20Contract.interface.encodeFunctionData('mint', [recipientAddress, amount]);
