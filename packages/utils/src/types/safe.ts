@@ -5,7 +5,7 @@ export type SafeSdkArgs = {
 };
 
 export type CreateSafeSdkArgs = {
-    safe: Safe;
     rpc: string;
     address: string;
+    safe?: Safe;
 };
