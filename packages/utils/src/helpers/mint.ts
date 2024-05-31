@@ -1,11 +1,5 @@
 import { ethers } from "ethers";
 
-// Replace with your own values
-const PRIVATE_KEY = ""; // Replace with your private key
-const USDC_SEPOLIA_CONTRACT_ADDRESS = "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8";
-const MINT_AMOUNT = ethers.parseUnits("500", 18); // Example mint amount, 1000 tokens with 18 decimals
-const RPC_URL = 'https://1rpc.io/sepolia';
-
 const ABI = [
   {
     "inputs": [
@@ -33,22 +27,25 @@ const ABI = [
   }
 ];
 
-export const mint = async (recipientAddress: string): Promise<void> => {
-  if (!PRIVATE_KEY) {
-    console.error("Private key is missing");
-    return;
-  }
+interface MintParams {
+  privateKey: string;
+  contractAddress: string;
+  amount: BigInt;
+  rpcUrl: string;
+  recipientAddress: string;
+}
 
+const mint: (params: MintParams) => Promise<void> = async ({ privateKey, contractAddress, amount, rpcUrl, recipientAddress }) => {
   // Connect to the Ethereum network
-const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const wallet = new ethers.Wallet(privateKey, provider);
 
   // Connect to the ERC-20 contract
-  const erc20Contract = new ethers.Contract(USDC_SEPOLIA_CONTRACT_ADDRESS, ABI, wallet);
+  const erc20Contract = new ethers.Contract(contractAddress, ABI, wallet);
 
   try {
     // Call the mint function
-    const tx = await erc20Contract.mint(recipientAddress, MINT_AMOUNT);
+    const tx = await erc20Contract.mint(recipientAddress, amount);
     console.log("Mint transaction hash:", tx.hash);
 
     // Wait for the transaction to be confirmed
@@ -58,3 +55,5 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
     console.error("Error minting tokens:", error);
   }
 }
+
+export default mint;
