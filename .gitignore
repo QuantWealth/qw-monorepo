@@ -26,3 +26,4 @@ yarn-debug.log*
 yarn-error.log*
 yarn.build-error.log*
 report.*.json
+volumes/
