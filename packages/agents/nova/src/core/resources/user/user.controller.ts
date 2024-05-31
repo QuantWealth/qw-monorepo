@@ -16,6 +16,7 @@ import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
 import { UserInitResponseDto } from './dto/user-init-response.dto';
+import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
 import { UserService } from './user.service';
 
 @Controller('user')
@@ -70,5 +71,21 @@ export class UserController {
   @Get('data')
   async userData(@Query() query: UserDataQueryDto): Promise<IUser> {
     return await this.userService.userData(query);
+  }
+
+  /**
+   * Submits transaction
+   * @param {UserSendTxBodyDto} body - body containing signed transaction
+   * @returns user data
+   */
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Submit transaction',
+    type: UserSendTxBodyDto,
+  })
+  @Post('sendTx')
+  async sendTx(@Body() body: UserSendTxBodyDto): Promise<void> {
+    return await this.userService.sendTx(body);
   }
 }
