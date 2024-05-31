@@ -2,5 +2,10 @@
   "name": "qw-subgraph",
   "version": "1.0.0",
   "main": "src/index.ts",
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.yml",
+    "build": "tsc",
+    "start": "tsc && node dist/index.js"
+  },
   "license": "MIT"
 }

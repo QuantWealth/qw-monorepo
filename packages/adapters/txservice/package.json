@@ -9,7 +9,8 @@
     "src/**/*"
   ],
   "scripts": {
-    "test": "ts-mocha --check-leaks --exit --timeout 60000 'test/**/*.test.ts'"
+    "test": "ts-mocha --check-leaks --exit --timeout 60000 'test/**/*.test.ts'",
+    "build": "tsc"
   },
   "dependencies": {
     "@sinclair/typebox": "0.25.21",
