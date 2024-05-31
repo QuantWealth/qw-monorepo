@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, Interface } from "ethers";
 
 const ABI = [
   {
@@ -27,33 +27,38 @@ const ABI = [
   }
 ];
 
+const erc20Interface = new Interface(ABI);
+
 interface MintParams {
-  privateKey: string;
   contractAddress: string;
   amount: BigInt;
   rpcUrl: string;
   recipientAddress: string;
 }
 
-const mint: (params: MintParams) => Promise<void> = async ({ privateKey, contractAddress, amount, rpcUrl, recipientAddress }) => {
-  // Connect to the Ethereum network
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const wallet = new ethers.Wallet(privateKey, provider);
-
-  // Connect to the ERC-20 contract
-  const erc20Contract = new ethers.Contract(contractAddress, ABI, wallet);
-
-  try {
-    // Call the mint function
-    const tx = await erc20Contract.mint(recipientAddress, amount);
-    console.log("Mint transaction hash:", tx.hash);
-
-    // Wait for the transaction to be confirmed
-    const receipt = await tx.wait();
-    console.log("Transaction confirmed in block", receipt.blockNumber);
-  } catch (error) {
-    console.error("Error minting tokens:", error);
-  }
+interface MintTransactionResponse {
+  to: string;
+  value: number;
+  data: string;
 }
 
-export default mint;
+export const mint: (params: MintParams) => Promise<MintTransactionResponse> = async ({ contractAddress, amount, rpcUrl, recipientAddress }) => {
+  try {
+    // Connect to the Ethereum network
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+  
+    // Connect to the ERC-20 contract
+    const erc20Contract = new ethers.Contract(contractAddress, ABI, provider);
+    const data = erc20Contract.interface.encodeFunctionData('mint', [recipientAddress, amount]);
+
+    const transactionObj: MintTransactionResponse = {
+      to: contractAddress,
+      value: 0,
+      data: data
+    };
+    return transactionObj;
+  } catch (error) {
+    console.error("Error creating mint transaction:", error);
+    throw error;
+  }
+}
