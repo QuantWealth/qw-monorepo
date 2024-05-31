@@ -20,6 +20,7 @@ import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
 import { USDC_SEPOLIA } from 'src/common/constants';
 import { ethers } from 'ethers';
+import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
 
 @Injectable()
 export class UserService {
@@ -180,5 +181,14 @@ export class UserService {
     delete user.__v;
     delete user._id;
     return user;
+  }
+
+  /**
+   * This service is called by /user/sendTx endpoint
+   * It submits the transaction
+   * @returns transaction
+   */
+  async sendTx({ signedTx }: UserSendTxBodyDto): Promise<void> {
+    return;
   }
 }

@@ -5,6 +5,8 @@ export const databaseProviders = [
   {
     provide: 'DATABASE_CONNECTION',
     useFactory: async (): Promise<typeof mongoose> =>
-      connectOrderbookDB('mongodb://localhost:27017/users'),
+      connectOrderbookDB(
+        'mongodb://localhost:27017',
+      ),
   },
 ];
