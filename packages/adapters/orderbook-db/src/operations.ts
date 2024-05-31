@@ -29,21 +29,51 @@ function submitOrder(orderData: IOrder) {
 }
 
 /**
- * Marks an order as executed based on its ID.
+ * Marks an order as executed based on its ID and updates the executed timestamp.
  * @param orderId - The ID of the order to be marked as executed.
+ * @param hashes - The array of transaction hashes related to the execution.
  * @returns A promise resolving to the result of the update operation.
  */
-function executeOrder(orderId: string) {
-  return OrderModel.updateOne({ id: orderId }, { status: "E" });
+async function executeOrder(orderId: string, hashes: string[]) {
+  // Ensure the order exists.
+  const order = await OrderModel.findOne({ id: orderId });
+  if (!order) {
+    throw new Error("Order does not exist.");
+  }
+
+  return OrderModel.updateOne(
+    { id: orderId },
+    {
+      status: "E",
+      "timestamps.executed": Date.now(),
+      hashes: hashes
+    }
+  );
 }
 
 /**
- * Cancels an order by updating its status to "Canceled".
+ * Cancels an order by updating its status to "Canceled" and setting the cancelled timestamp.
  * @param orderId - The ID of the order to cancel.
  * @returns A promise resolving to the result of the update operation.
+ * @throws Error if the order is already executed.
  */
-function cancelOrder(orderId: string) {
-  return OrderModel.updateOne({ id: orderId }, { status: "C" });
+async function cancelOrder(orderId: string) {
+  // Ensure the order exists and is not executed.
+  const order = await OrderModel.findOne({ id: orderId });
+  if (!order) {
+    throw new Error("Order does not exist.");
+  }
+  if (order.status === "E") {
+    throw new Error("Cannot cancel executed order.");
+  }
+
+  return OrderModel.updateOne(
+    { id: orderId },
+    {
+      status: "C",
+      "timestamps.cancelled": Date.now()
+    }
+  );
 }
 
 /**
@@ -65,7 +95,7 @@ function getOrder(orderId: string) {
  */
 function getOrders(start: number, end: number, status?: string, distribution?: boolean) {
   const query: any = {
-    timestamp: { $gte: start, $lte: end }
+    "timestamps.placed": { $gte: start, $lte: end }
   };
   if (status) query.status = status;
   if (distribution !== undefined) query.distribution = distribution;

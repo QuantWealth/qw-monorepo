@@ -18,3 +18,6 @@ export async function connectOrderbookDB(hostname?: string): Promise<Mongoose> {
     hostname ? hostname : "mongodb://localhost/orderbook"
   );
 }
+
+export { IOrder, IUser } from "./schema";
+export * from "./operations";
