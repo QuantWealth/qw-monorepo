@@ -10,7 +10,11 @@
     "packages/*",
     "packages/adapters/*",
     "packages/agents/*",
-    "packages/nodes/*"
+    "packages/nodes/*",
+    "utils/*"
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "scripts": {
+    "clean": "yarn cache clean && rm -rf node_modules && rm -rf packages/*/node_modules && rm -rf packages/*/dist && rm -rf packages/*/*/node_modules && rm -rf packages/*/*/dist"
+  }
 }
