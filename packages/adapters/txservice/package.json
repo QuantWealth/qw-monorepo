@@ -1,5 +1,5 @@
 {
-  "name": "qw-txservice",
+  "name": "@qw/txservice",
   "version": "0.0.1",
   "description": "Transaction write/read service for a signer configured across multiple chains.",
   "author": "QuantWealth",
