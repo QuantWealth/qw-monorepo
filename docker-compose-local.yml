@@ -1,0 +1,8 @@
+name: qw-local
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./volumes/mongodb-data:/data/db
