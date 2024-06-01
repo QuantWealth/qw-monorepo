@@ -13,86 +13,80 @@ import {
   receiveFunds,
   execute,
 } from '@qw/utils';
-import { getOrders, IOrder } from 'qw-orderbook-db';
+import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
+import { getOrders, IOrder } from '@qw/orderbook-db';
 import { ethers } from 'ethers';
 import { getConfig } from '../../../config';
 
 @Injectable()
 export class OrderbookService {
+  private wallet;
+  public config;
+  public signer;
+  public provider;
 
-  const config = await getConfig();
-  /**
-   * This service is called by /defi/apy endpoint
-   * It retrieves the apy of the asset address provided
-   * This only fetches apy from aave
-   * @returns apy string
-   */
+  constructor() {
+    this.init();
+  }
 
-  /**
-   * Produces an approve transaction request for a given token address and amount.
-   * This calls the approve function from utils to get the transaction request.
-   * @param tokenAddress - The address of the token to approve.
-   * @param amount - The amount of the token to approve.
-   * @returns A promise that resolves to an ethers.TransactionRequest object.
-   */
+  async init() {
+    try {
+      this.config = await getConfig();
+      this.wallet = new ethers.Wallet(this.config.privateKey);
+
+      const rpc = this.config.chains[0].providers[0];
+      this.provider = new ethers.JsonRpcProvider(rpc);
+
+      this.signer = this.wallet.connect(this.provider);
+      console.log('Wallet initialized with address:', this.signer.address);
+    } catch (error) {
+      console.error('Error initializing wallet:', error);
+    }
+  }
+
   async createApproveTransaction(
     tokenAddress: string,
     amount: string,
   ): Promise<ethers.TransactionRequest> {
-    // TODO: Replace constants with configuration.
-    const rpc = this.config.chains[0].providers;
-    const chainId = 11155111;
-    const qwManagerAddress = '0x0000000000000000000000000000000000000123';
+    const qwManagerAddress =
+      this.config.chains[0].contractAddresses.QWManager.address;
 
-    const provider = new ethers.JsonRpcProvider(rpc, chainId);
     return approve({
       contractAddress: tokenAddress,
       amount: BigInt(amount),
-      provider,
+      provider: this.provider,
       spender: qwManagerAddress,
     });
   }
 
-  /**
-   * Sends an approve transaction using Gelato relay.
-   * Adds the order details to orderbook-db and calls executeRelayTransaction to relay the approve.
-   * @param userScwAddress - The smart contract wallet address of the user.
-   * @param userSignedTransaction - The signed transaction details.
-   * @returns A promise that resolves when the transaction has been relayed.
-   */
   async sendApproveTransaction(
     userScwAddress: string,
-    userSignedTransaction: {
-      to: string;
-      value: string;
-      data: string;
-    },
+    userSignedTransaction: MetaTransactionData,
   ) {
-    // TODO: Replace constants with configuration.
-    const rpc = 'https://1rpc.io/sepolia';
-    const gelatoApiKey = 'fake-api-key';
-    const PRIVATE_KEY = ...;
-
-    // Create the MetaTransactionData.
-    // const transactions = await createTransactions([userSignedTransaction]);
+    const rpc = this.config.chains[0].providers[0];
+    const gelatoApiKey = this.config.gelatoApiKey;
 
     // Create the gelato relay pack using an initialized SCW.
-    const safeQW = await init({ rpc, signer: QW_SIGNER, address: userScwAddress });
+    const safeQW = await initQW({
+      rpc,
+      signer: this.signer,
+      address: userScwAddress,
+    });
     const gelatoRelayPack = await createGelatoRelayPack({
       gelatoApiKey,
       protocolKit: safeQW,
     });
 
     // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
-    let safeTransaction = await relayTransaction({
-      userSignedTransaction,
+    const safeTransaction = await relayTransaction({
+      transactions: [userSignedTransaction],
       gelatoRelayPack,
     });
 
     // Execute the relay transaction using gelato.
     await executeRelayTransaction({
       gelatoRelayPack,
-      signSafeTransaction: safeTransaction,
+      signedSafeTransaction: safeTransaction,
     });
   }
 
@@ -140,22 +134,17 @@ export class OrderbookService {
         }),
       );
 
-
       // target array should be present at orders
       const target = order.dapps; /// Addresses of the child contracts
       const tokens = Array(order.dapps.length).fill(erc20TokenAddress); /// Token addresses for each child contract
       const amount = order.amounts.map(BigInt); /// Amounts for each child contract
 
-
-      // get total amount and create array for 
+      // get total amount and create array for
     }
-
 
     // execute request preparation
 
-
     const callData = Array(order.dapps.length).fill('0x'); /// Calldata for each child contract // TODO: Calldata is prepared for each child contract
-
 
     const executeRequests: ethers.TransactionRequest[] = execute({
       contractAddress: qwManagerAddress,
@@ -163,9 +152,8 @@ export class OrderbookService {
       target,
       callData,
       tokens,
-      amount
+      amount,
     });
-
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
     const signer =
@@ -200,7 +188,6 @@ export class OrderbookService {
         gelatoRelayPack,
         signSafeTransaction: safeTransaction,
       });
-
 
       // update the status of the orderbook.
       // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
