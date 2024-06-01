@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DefiApyQueryDto } from './dto/approve.dto';
-import { DefiApyResponse } from './dto/execute.dto';
+import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
 import {
   getSCW,
   initQW,
@@ -50,33 +49,35 @@ export class OrderbookService {
     }
   }
 
-  async createApproveTransaction(
-    tokenAddress: string,
-    amount: string,
-  ): Promise<ethers.TransactionRequest> {
+  /**
+   * Creates an approval transaction to allow spending tokens from the user's wallet.
+   * @param query The query containing asset address and amount details.
+   * @returns A promise that resolves to an ethers.TransactionRequest object representing the approval transaction.
+  */
+  async createApproveTransaction(query: OrderbookGetApproveTxQueryDto): Promise<ethers.TransactionRequest> {
+    const { assetAddress, amount } = query;
     const qwManagerAddress =
       this.config.chains[0].contractAddresses.QWManager.address;
 
     return approve({
-      contractAddress: tokenAddress,
+      contractAddress: assetAddress,
       amount: BigInt(amount),
       provider: this.provider,
       spender: qwManagerAddress,
     });
   }
 
-  // creates the pending order in orderbook and sends the approval transaction to gelato
-  async sendApproveTransaction(
-    userScwAddress: string,
-    userSignedTransaction: MetaTransactionData,
-    amount: string,
-    strategyType: "FLEXI" | "FIXED"
-  ) {
+  /**
+   * Creates a pending order in the orderbook and sends the approval transaction to Gelato.
+   * @param query The query containing amount, wallet addresses, signed transaction, and strategy type details.
+  */
+  async sendApproveTransaction(query: OrderbookSendApproveTxQueryDto) {
+    const {amount, userWalletAddress, userScwAddress, userSignedTransaction, strategyType} = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
     const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
     const dapps = [qwAaveV3Address];
     try {
-      await this._createOrder(userScwAddress, amounts, dapps, userSignedTransaction, strategyType);
+      await this._createOrder(userWalletAddress, userScwAddress, amounts, dapps, userSignedTransaction, strategyType);
       await this._sendApproveTransaction(userScwAddress, userSignedTransaction);
     } catch (err) {
       console.error('Error sending approving tx:', err);
@@ -116,6 +117,7 @@ export class OrderbookService {
 
   // internal fn
   private async _createOrder(
+    userWalletAddress: string,
     userScwAddress: string,
     amounts: string[],
     dapps: string[],
@@ -126,7 +128,7 @@ export class OrderbookService {
 
     this.orderModel.create({
       id: uuidv4(),
-      signer: userScwAddress,
+      signer: userWalletAddress,
       wallet: userScwAddress,
       dapps,
       amounts,
