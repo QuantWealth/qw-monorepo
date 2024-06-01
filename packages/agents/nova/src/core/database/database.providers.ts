@@ -1,5 +1,5 @@
 import * as mongoose from 'mongoose';
-import { connectOrderbookDB } from 'qw-orderbook-db';
+import { connectOrderbookDB } from '@qw/orderbook-db';
 
 export const databaseProviders = [
   {

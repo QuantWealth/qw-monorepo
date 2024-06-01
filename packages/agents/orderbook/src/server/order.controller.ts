@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query, Put, Delete, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { IOrder } from 'qw-orderbook-db';
+import { IOrder } from '@qw/orderbook-db';
 import { GuardianAuthGuard } from './guardian-auth.guard';
 
 @Controller('orders')

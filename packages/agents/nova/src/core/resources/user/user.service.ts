@@ -1,6 +1,6 @@
 import { BalancesResponse, CovalentClient } from '@covalenthq/client-sdk';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { IUser, UserModel } from 'qw-orderbook-db/dist/schema';
+import { IUser, UserModel } from '@qw/orderbook-db/dist/schema';
 import {
   initSCW,
   createSCW,

@@ -145,7 +145,6 @@ export class OrderbookService {
    * @returns A promise that resolves when all transactions have been executed.
    */
   async handleBatchExecuteOrders() {
-    // TODO: Replace constants with configuration.
     const rpc = this.config.chains[0].providers[0];
     const chainId = Object.keys(this.config.chains)[0];
     const qwManagerAddress =
@@ -162,7 +161,7 @@ export class OrderbookService {
     end.setSeconds(end.getSeconds() + 10);
 
     // Get pending orders.
-    const pendingOrders: IOrder[] = getOrders(start, end, 'P', false); // TODO: Confirm that 'false' meaning debit is correct here.
+    const pendingOrders: IOrder[] = getOrders(start, end, 'P', false);
     const provider = new ethers.JsonRpcProvider(rpc, chainId);
 
     const receiveFundsRequests: MetaTransactionData[] = [];

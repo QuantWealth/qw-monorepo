@@ -11,7 +11,7 @@ import {
   createUser,
   IOrder,
   IUser
-} from 'qw-orderbook-db';
+} from '@qw/orderbook-db';
 
 @Injectable()
 export class OrderService {

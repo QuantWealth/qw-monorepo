@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
-import { IUser } from 'qw-orderbook-db/dist/schema';
+import { IUser } from '@qw/orderbook-db/dist/schema';
 import { Transaction } from 'src/common/dto/transaction';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserBalanceResponseDto } from './dto/user-balance-response.dto';

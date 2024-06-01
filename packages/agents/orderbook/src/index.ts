@@ -1,7 +1,7 @@
-import {connectOrderbookDB} from "qw-orderbook-db";
-import { bootstrap } from './server';
-import { loadConfig } from './config';
-import { startPolling } from './poller';
+import { connectOrderbookDB } from "@qw/orderbook-db";
+import { bootstrap } from "./server";
+import { loadConfig } from "./config";
+import { startPolling } from "./poller";
 
 // Setup the server
 const setup = async () => {
@@ -18,14 +18,13 @@ const setup = async () => {
 };
 
 setup().catch((error) => {
-  console.error('Error setting up Orderbook server.', error);
+  console.error("Error setting up Orderbook server.", error);
   process.exit(1);
 });
-
 
 const setupDatabase = async () => {
   // Setup the database
   // ...
 
   const database = connectOrderbookDB();
-}
+};
