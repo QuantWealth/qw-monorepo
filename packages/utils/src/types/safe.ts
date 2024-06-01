@@ -9,3 +9,9 @@ export type CreateSafeSdkArgs = {
     address: string;
     safe?: Safe;
 };
+
+export type DeployedSafeArgs = {
+    rpc: string;
+    signer: string; // private key
+    safeAddress: string;
+}
