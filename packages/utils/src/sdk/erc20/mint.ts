@@ -1,5 +1,6 @@
-import { ethers, TransactionRequest } from "ethers";
-import {ERC20_ABI} from "../../constants"
+import { ethers } from "ethers";
+import {ERC20_ABI} from "../../constants";
+import { Transaction } from '@safe-global/safe-core-sdk-types';
 
 export type MintParams = {
   contractAddress: string;
@@ -8,7 +9,7 @@ export type MintParams = {
   recipientAddress: string;
 }
 
-export const mint =  (params: MintParams): TransactionRequest => {
+export const mint =  (params: MintParams): Transaction => {
 
   const { contractAddress, amount, provider, recipientAddress } = params;
   try {
@@ -16,9 +17,10 @@ export const mint =  (params: MintParams): TransactionRequest => {
     const erc20Contract = new ethers.Contract(contractAddress, ERC20_ABI, provider);
     const data = erc20Contract.interface.encodeFunctionData('mint', [recipientAddress, amount]);
 
-    const transactionObj: TransactionRequest = {
+    const transactionObj: Transaction = {
       to: contractAddress,
-      data: data
+      data: data,
+      value: '0',
     };
     return transactionObj;
   } catch (error) {
