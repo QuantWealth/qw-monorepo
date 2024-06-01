@@ -19,7 +19,7 @@
       }
     }
   },
-  "gelatoApiKey": "fake-api-key",
-  "mnemonic": "adc adc adc",
+  "gelatoApiKey": "",
+  "privateKey": "",
   "environment": "staging"
 }
