@@ -1,13 +1,14 @@
-import Safe from "@safe-global/protocol-kit";
+import Safe, { SafeProviderConfig } from "@safe-global/protocol-kit";
 
 export type SafeSdkArgs = {
-    address: string;
+  address: string;
 };
 
 export type CreateSafeSdkArgs = {
     rpc: string;
     address: string;
     safe?: Safe;
+    signer?: SafeProviderConfig["signer"];
 };
 
 export type DeployedSafeArgs = {

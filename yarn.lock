@@ -1746,12 +1746,15 @@ __metadata:
     "@types/supertest": "npm:^6.0.0"
     "@typescript-eslint/eslint-plugin": "npm:^6.0.0"
     "@typescript-eslint/parser": "npm:^6.0.0"
+    ajv: "npm:^8.14.0"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
+    dotenv: "npm:^16.4.5"
     eslint: "npm:^8.42.0"
     eslint-config-prettier: "npm:^9.0.0"
     eslint-plugin-prettier: "npm:^5.0.0"
     ethers: "npm:^6.12.1"
+    fs: "npm:^0.0.1-security"
     jest: "npm:^29.5.0"
     prettier: "npm:^3.0.0"
     reflect-metadata: "npm:^0.2.0"
@@ -3239,7 +3242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^8.0.0":
+"ajv@npm:^8.0.0, ajv@npm:^8.14.0":
   version: 8.14.0
   resolution: "ajv@npm:8.14.0"
   dependencies:
@@ -4566,6 +4569,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.4.5":
+  version: 16.4.5
+  resolution: "dotenv@npm:16.4.5"
+  checksum: 10c0/48d92870076832af0418b13acd6e5a5a3e83bb00df690d9812e94b24aff62b88ade955ac99a05501305b8dc8f1b0ee7638b18493deb6fe93d680e5220936292f
+  languageName: node
+  linkType: hard
+
 "eastasianwidth@npm:^0.2.0":
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
@@ -5536,6 +5546,13 @@ __metadata:
   version: 1.0.0
   resolution: "fs.realpath@npm:1.0.0"
   checksum: 10c0/444cf1291d997165dfd4c0d58b69f0e4782bfd9149fd72faa4fe299e68e0e93d6db941660b37dd29153bf7186672ececa3b50b7e7249477b03fdf850f287c948
+  languageName: node
+  linkType: hard
+
+"fs@npm:^0.0.1-security":
+  version: 0.0.1-security
+  resolution: "fs@npm:0.0.1-security"
+  checksum: 10c0/e0c0b585ec6f7483d63d067215d9d6bb2e0dba5912060d32554c8e566a0e22ee65e4c2a2b0567476efbbfb47682554b4711d69cab49950d01f227a3dfa7d671a
   languageName: node
   linkType: hard
 
@@ -8377,14 +8394,14 @@ __metadata:
 
 "qw-orderbook-db@file:../../adapters/orderbook-db::locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook":
   version: 0.0.1
-  resolution: "qw-orderbook-db@file:../../adapters/orderbook-db#../../adapters/orderbook-db::hash=4206db&locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook"
+  resolution: "qw-orderbook-db@file:../../adapters/orderbook-db#../../adapters/orderbook-db::hash=8022d9&locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook"
   dependencies:
     "@types/node": "npm:^20.12.11"
     mongodb: "npm:^6.6.1"
     mongoose: "npm:^8.3.4"
     node: "npm:^20.13.0"
     typescript: "npm:^5.4.5"
-  checksum: 10c0/aa60d0340345508a5ac388a160c5c965caa02f32489ff2d7a9f8233cafa34c128ea105e53835d19ef35b4c264826f479f2a4bead9417720bc77d61e611a81956
+  checksum: 10c0/ea33d172d28ecc3c30e3f68c4b28a7c68bd1293c2436de9b4fe98a5a98022c818bcfcac156da81bafd48a96da26860135aea7e93b337fbb0050c6393336250f9
   languageName: node
   linkType: hard
 

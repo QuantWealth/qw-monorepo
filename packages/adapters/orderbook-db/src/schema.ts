@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 /// Order Schema
+/// TODO: amounts, dapps, signatures, stratrgyType need to be in a object[] 
 interface IOrder {
   id: string;
   signer: string;
@@ -11,11 +12,12 @@ interface IOrder {
     cancelled?: number;
   };
   dapps: string[];
-  distribution: boolean;
+  distribution?: boolean;
   amounts: string[];
-  signatures: string[];
+  signatures?: string[];
   status: "P" | "E" | "C"; // Pending, Executed, Canceled
   hashes?: string[]; // Optional array of transaction hashes
+  strategyType: "FLEXI" | "FIXED";
 }
 
 const OrderSchema = new mongoose.Schema<IOrder>({
@@ -32,7 +34,8 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   amounts: [{ type: String, required: true }],
   signatures: [{ type: String, required: true }],
   status: { type: String, enum: ["P", "E", "C"], required: true },
-  hashes: [{ type: String }]
+  hashes: [{ type: String }],
+  strategyType: { type: String, enum: ["FLEXY", "FIXED"], required: true },
 });
 
 // Pre-save middleware to set the order ID.

@@ -1,0 +1,25 @@
+{
+  "logLevel": "debug",
+  "chains": {
+    "11155111": {
+      "providers": ["https://1rpc.io/sepolia"],
+      "contractAddresses": {
+        "QWManager": {
+          "contractName": "QWManager",
+          "address": "0x13A1A7e98E0235FCFB034452C13c1B7548fa1651"
+        },
+        "QWRegistry": {
+          "contractName": "QWRegistry",
+          "address": "0x57dbaE44a6a9F14294E4545cbaC5CBf9a9AD9b9a"
+        },
+        "QWAaveV3": {
+          "contractName": "QWAaveV3",
+          "address": "0xA52a11Be28bEA0d559370eCbE2f1CB8B1e8e3EcA"
+        }
+      }
+    }
+  },
+  "gelatoApiKey": "",
+  "privateKey": "",
+  "environment": "staging"
+}
