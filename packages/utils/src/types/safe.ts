@@ -5,8 +5,14 @@ export type SafeSdkArgs = {
 };
 
 export type CreateSafeSdkArgs = {
-  rpc: string;
-  address: string;
-  safe?: Safe;
-  signer?: SafeProviderConfig["signer"];
+    rpc: string;
+    address: string;
+    safe?: Safe;
+    signer?: SafeProviderConfig["signer"];
 };
+
+export type DeployedSafeArgs = {
+    rpc: string;
+    signer: string; // private key
+    safeAddress: string;
+}

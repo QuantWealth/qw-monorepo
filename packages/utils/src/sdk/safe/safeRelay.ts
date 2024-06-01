@@ -1,9 +1,10 @@
 import { GelatoRelayPack } from '@safe-global/relay-kit'
-import Safe from '@safe-global/protocol-kit'
+import Safe from '@safe-global/protocol-kit';
 import {
     MetaTransactionData,
     MetaTransactionOptions,
-    SafeTransaction
+    SafeTransaction,
+    Transaction
 } from '@safe-global/safe-core-sdk-types'
 
 
@@ -69,4 +70,15 @@ export const executeRelayTransaction = async (args: {
     });
 
     console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`);
+}
+
+export const normalizeMetaTransaction = (args: {
+    tx: Transaction
+}): MetaTransactionData => {
+    const  { tx } = args;
+    return {
+        to: tx.to,
+        value: tx.value.toString(),
+        data: tx.data,
+    };
 }

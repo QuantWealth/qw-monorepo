@@ -1,6 +1,6 @@
 import Safe, { PredictedSafeProps } from '@safe-global/protocol-kit';
 import { Transaction } from '@safe-global/safe-core-sdk-types';
-import { CreateSafeSdkArgs, SafeSdkArgs } from '../../types/safe';
+import { CreateSafeSdkArgs, DeployedSafeArgs, SafeSdkArgs } from '../../types/safe';
 
 
 const _getPredictedSafeConfig = (args: SafeSdkArgs): PredictedSafeProps => {
@@ -45,6 +45,14 @@ export const createSCW = async (args: CreateSafeSdkArgs): Promise<Transaction> =
     return deploymentTransaction;
 }
 
+export const getDeployedSCW = async (args: DeployedSafeArgs): Promise<Safe> => {
+    const { rpc, signer, safeAddress } = args;
+    return Safe.init({
+        provider: rpc,
+        signer: signer,
+        safeAddress: safeAddress
+    })
+}
 
 export const getSCW = async (args: CreateSafeSdkArgs): Promise<string> => {
     const address = await args.safe.getAddress();
