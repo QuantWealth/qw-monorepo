@@ -10,7 +10,10 @@ import {
   relayTransaction,
   signSafeTransaction,
   executeRelayTransaction,
+  receiveFunds,
+  execute,
 } from 'qw-utils';
+import { getOrders, IOrder } from 'qw-orderbook-db';
 import { ethers } from 'ethers';
 
 @Injectable()
@@ -44,14 +47,18 @@ export class OrderbookService {
   // add the order details to orderbook-db and call executeRelayTransaction to relay the approve.
   async sendApproveTransaction(
     userScwAddress: string,
-    userSignedTransactionData: string,
+    userSignedTransaction: {
+      to: string;
+      value: string;
+      data: string;
+    },
   ) {
     // TODO: Replace constants with configuration.
     const rpc = 'https://1rpc.io/sepolia';
     const gelatoApiKey = 'fake-api-key';
 
     // createTransactions
-    const transactions = await createTransactions([userSignedTransactionData]);
+    const transactions = await createTransactions([userSignedTransaction]);
 
     // createGelatoRelayPack
     const safe = await initSCW({ rpc, address: userScwAddress });
@@ -80,12 +87,64 @@ export class OrderbookService {
   }
 
   // Wrap the below
-  // async handleBatchExecuteOrders() {
-  // const signer =
-  //   '0x5d0f6356861e10edebf756675712773ccac4c7c65a0daf733c7d8747df911b6d';
-  // const safe = initQW({ rpc, address, signer });
-  // create batch transactions for pending orders, pull the data from orderbook DB and create receiveFuns batch transactions, return transactions[]
-  // create execute transaction for pending orders, pull the data from orderbook DB and create execute transactions, return transactions[]
-  // sign the above batch transcations by signSafeTransaction and then executeRelayTransaction to relay the batch transactions.
-  // }
+  async handleBatchExecuteOrders() {
+    // TODO: Replace constants with configuration.
+    const rpc = 'https://1rpc.io/sepolia';
+    const chainId = 11155111;
+    const qwManagerAddress = '0x0000000000000000000000000000000000000123';
+    const erc20TokenAddress = '0x0000000000000000000000000000000000000456';
+
+    // Get the start and end dates for a period of 1 month into the past to now.
+    const start = new Date();
+    start.setMonth(start.getMonth() - 1);
+    const end = new Date();
+    end.setSeconds(end.getSeconds() + 10);
+
+    // Get pending orders.
+    const pendingOrders: IOrder[] = getOrders(start, end, 'P', false); // TODO: Confirm that 'false' meaning debit is correct here.
+    const provider = new ethers.JsonRpcProvider(rpc, chainId);
+
+    const receiveFundsRequests: ethers.TransactionRequest[] = [];
+    const executeRequests: ethers.TransactionRequest[] = [];
+    for (const order of pendingOrders) {
+      // TODO: Orderbook IOrder schema should have token address(es).
+      // User is supplying multiple dapps, but we will combine the amounts and we are assuming the same token address for now.
+      const sum = order.amounts.reduce(
+        (acc, val) => acc + BigInt(val),
+        BigInt(0),
+      );
+      // Derive the receive funds transaction request, push to batch.
+      receiveFundsRequests.push(
+        receiveFunds({
+          contractAddress: qwManagerAddress,
+          provider,
+          user: order.signer,
+          token: erc20TokenAddress,
+          amount: sum,
+        }),
+      );
+
+      // Form the execute transaction request, push to batch.
+      executeRequests.push(
+        execute({
+          contractAddress: qwManagerAddress,
+          provider,
+          target: order.dapps,
+          // TODO: Calldata must come from order? Will need to modify Order schema for this...
+          callData: Array(order.dapps.length).fill('0x'),
+          // TODO: Order schema must be modified to track token addresses as well...?
+          tokens: Array(order.dapps.length).fill(erc20TokenAddress),
+          amount: order.amounts.map(BigInt),
+        }),
+      );
+    }
+
+    // TODO: sign the above batch transcations by signSafeTransaction and then executeRelayTransaction to relay the batch transactions.
+    // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
+    // Order schema should really record the gelato relay ID in this case...
+
+    // const signer =
+    //   '0x5d0f6356861e10edebf756675712773ccac4c7c65a0daf733c7d8747df911b6d';
+    // const safe = initQW({ rpc, address, signer });
+  }
 }

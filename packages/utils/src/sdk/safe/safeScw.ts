@@ -27,7 +27,6 @@ export const initSCW = async (args: CreateSafeSdkArgs): Promise<Safe> => {
 }
 
 export const initQW = async (args: CreateSafeSdkArgs): Promise<Safe> => { 
-
     return Safe.init({
         provider: args.rpc,
         signer: args.signer,

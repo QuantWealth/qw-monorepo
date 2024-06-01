@@ -5,8 +5,8 @@ import { IOrder, IUser, OrderModel, UserModel } from "./schema";
  * @param userWallet - The wallet address of the user to fetch orders for.
  * @returns A promise resolving to an array of orders linked to the given wallet address.
  */
-function getUserOrders(userWallet: string) {
-  return OrderModel.find({ wallet: userWallet });
+async function getUserOrders(userWallet: string): Promise<IOrder[]> {
+  return await OrderModel.find({ wallet: userWallet }).exec();
 }
 
 /**
@@ -14,8 +14,8 @@ function getUserOrders(userWallet: string) {
  * @param userSigner - The signer identifier to fetch orders for.
  * @returns A promise resolving to an array of orders linked to the given signer.
  */
-function getUserOrdersBySigner(userSigner: string) {
-  return OrderModel.find({ signer: userSigner });
+async function getUserOrdersBySigner(userSigner: string): Promise<IOrder[]> {
+  return await OrderModel.find({ signer: userSigner }).exec();
 }
 
 /**
@@ -23,9 +23,9 @@ function getUserOrdersBySigner(userSigner: string) {
  * @param orderData - The order data to be saved.
  * @returns A promise that resolves with the saved order document.
  */
-function submitOrder(orderData: IOrder) {
+async function submitOrder(orderData: IOrder): Promise<IOrder> {
   const order = new OrderModel(orderData);
-  return order.save();
+  return await order.save();
 }
 
 /**
@@ -34,21 +34,23 @@ function submitOrder(orderData: IOrder) {
  * @param hashes - The array of transaction hashes related to the execution.
  * @returns A promise resolving to the result of the update operation.
  */
-async function executeOrder(orderId: string, hashes: string[]) {
+async function executeOrder(orderId: string, hashes: string[]): Promise<IOrder | null> {
   // Ensure the order exists.
-  const order = await OrderModel.findOne({ id: orderId });
+  const order = await OrderModel.findOne({ id: orderId }).exec();
   if (!order) {
     throw new Error("Order does not exist.");
   }
 
-  return OrderModel.updateOne(
+  await OrderModel.updateOne(
     { id: orderId },
     {
       status: "E",
       "timestamps.executed": Date.now(),
       hashes: hashes
     }
-  );
+  ).exec();
+
+  return await OrderModel.findOne({ id: orderId }).exec();
 }
 
 /**
@@ -57,9 +59,9 @@ async function executeOrder(orderId: string, hashes: string[]) {
  * @returns A promise resolving to the result of the update operation.
  * @throws Error if the order is already executed.
  */
-async function cancelOrder(orderId: string) {
+async function cancelOrder(orderId: string): Promise<IOrder | null> {
   // Ensure the order exists and is not executed.
-  const order = await OrderModel.findOne({ id: orderId });
+  const order = await OrderModel.findOne({ id: orderId }).exec();
   if (!order) {
     throw new Error("Order does not exist.");
   }
@@ -67,13 +69,15 @@ async function cancelOrder(orderId: string) {
     throw new Error("Cannot cancel executed order.");
   }
 
-  return OrderModel.updateOne(
+  await OrderModel.updateOne(
     { id: orderId },
     {
       status: "C",
       "timestamps.cancelled": Date.now()
     }
-  );
+  ).exec();
+
+  return await OrderModel.findOne({ id: orderId }).exec();
 }
 
 /**
@@ -81,8 +85,8 @@ async function cancelOrder(orderId: string) {
  * @param orderId - The ID of the order to retrieve.
  * @returns A promise resolving to the order document or null if not found.
  */
-function getOrder(orderId: string) {
-  return OrderModel.findOne({ id: orderId });
+async function getOrder(orderId: string): Promise<IOrder | null> {
+  return await OrderModel.findOne({ id: orderId }).exec();
 }
 
 /**
@@ -93,22 +97,22 @@ function getOrder(orderId: string) {
  * @param distribution - Optional. The distribution flag of the orders to filter (true for credit, false for debit).
  * @returns A promise resolving to an array of orders that match the given criteria.
  */
-function getOrders(start: number, end: number, status?: string, distribution?: boolean) {
+async function getOrders(start: number, end: number, status?: string, distribution?: boolean): Promise<IOrder[]> {
   const query: any = {
     "timestamps.placed": { $gte: start, $lte: end }
   };
   if (status) query.status = status;
   if (distribution !== undefined) query.distribution = distribution;
   
-  return OrderModel.find(query);
+  return await OrderModel.find(query).exec();
 }
 
-function getUser(id: string) {
-  return UserModel.findOne({ id });
+async function getUser(id: string): Promise<IUser | null> {
+  return await UserModel.findOne({ id }).exec();
 }
 
-function createUser(user: IUser) {
-  return UserModel.create(user);
+async function createUser(user: IUser): Promise<IUser> {
+  return await UserModel.create(user);
 }
 
 export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders, getUser, createUser };
