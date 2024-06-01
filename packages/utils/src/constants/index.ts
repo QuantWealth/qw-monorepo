@@ -1,4 +1,4 @@
-export * from './abi';
+export * from './ABI';
 
 export * from './contractAddresses';
 
