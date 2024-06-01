@@ -3,6 +3,7 @@ import { DefiApyQueryDto } from './dto/approve.dto';
 import { DefiApyResponse } from './dto/execute.dto';
 import {
   initSCW,
+  getSCW,
   initQW,
   approve,
   createTransactions,
@@ -12,6 +13,7 @@ import {
   executeRelayTransaction,
   receiveFunds,
   execute,
+  USDT_SEPOLIA,
 } from '@qw/utils';
 import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { getOrders, IOrder } from '@qw/orderbook-db';
@@ -35,6 +37,7 @@ export class OrderbookService {
       this.wallet = new ethers.Wallet(this.config.privateKey);
 
       const rpc = this.config.chains[0].providers[0];
+
       this.provider = new ethers.JsonRpcProvider(rpc);
 
       this.signer = this.wallet.connect(this.provider);
@@ -97,12 +100,13 @@ export class OrderbookService {
    */
   async handleBatchExecuteOrders() {
     // TODO: Replace constants with configuration.
-    const rpc = 'https://1rpc.io/sepolia';
-    const chainId = 11155111;
-    const qwManagerAddress = '0x0000000000000000000000000000000000000123';
-    const erc20TokenAddress = '0x0000000000000000000000000000000000000456';
-    const gelatoApiKey = 'fake-api-key';
-    const qwScwAddress = '0x0000000000000000000000000000000000000789';
+    const rpc = this.config.chains[0].providers[0];
+    const chainId = Object.keys(this.config.chains)[0];
+    const qwManagerAddress =
+      this.config.chains[0].contractAddresses.QWManager.address;
+    const erc20TokenAddress = USDT_SEPOLIA;
+    const gelatoApiKey = this.config.gelatoApiKey;
+    const qwScwAddress = await getSCW({ rpc, address: this.signer.address });
 
     // Get the start and end dates for a period of 1 month into the past to now.
     const start = new Date();
@@ -114,7 +118,8 @@ export class OrderbookService {
     const pendingOrders: IOrder[] = getOrders(start, end, 'P', false); // TODO: Confirm that 'false' meaning debit is correct here.
     const provider = new ethers.JsonRpcProvider(rpc, chainId);
 
-    const receiveFundsRequests: ethers.TransactionRequest[] = [];
+    const receiveFundsRequests: MetaTransactionData[] = [];
+    let totalSum = BigInt(0);
 
     for (const order of pendingOrders) {
       // TODO: Orderbook IOrder schema should have token address(es).
@@ -123,30 +128,36 @@ export class OrderbookService {
         (acc, val) => acc + BigInt(val),
         BigInt(0),
       );
+
+      totalSum = BigInt(totalSum) + BigInt(sum);
+
       // Derive the receive funds transaction request, push to batch.
-      receiveFundsRequests.push(
-        receiveFunds({
-          contractAddress: qwManagerAddress,
-          provider,
-          user: order.signer,
-          token: erc20TokenAddress,
-          amount: sum,
-        }),
-      );
 
-      // target array should be present at orders
-      const target = order.dapps; /// Addresses of the child contracts
-      const tokens = Array(order.dapps.length).fill(erc20TokenAddress); /// Token addresses for each child contract
-      const amount = order.amounts.map(BigInt); /// Amounts for each child contract
+      const txReq = receiveFunds({
+        contractAddress: qwManagerAddress,
+        provider,
+        user: order.signer,
+        token: erc20TokenAddress,
+        amount: sum,
+      });
 
-      // get total amount and create array for
+      receiveFundsRequests.push({
+        to: String(await txReq.to!),
+        value: String(txReq.value!),
+        data: txReq.data,
+      });
     }
 
+    // target array should be present at orders
+    const _target = ['0xA52a11Be28bEA0d559370eCbE2f1CB8B1e8e3EcA']; // AAVE V3 contract address
+    const target = _target; /// Addresses of the child contracts
+    const tokens = [USDT_SEPOLIA]; /// Token addresses for each child contract
+    const amount = [totalSum];
     // execute request preparation
 
     const callData = Array(order.dapps.length).fill('0x'); /// Calldata for each child contract // TODO: Calldata is prepared for each child contract
 
-    const executeRequests: ethers.TransactionRequest[] = execute({
+    const _executeRequests: ethers.TransactionRequest = execute({
       contractAddress: qwManagerAddress,
       provider,
       target,
@@ -154,6 +165,15 @@ export class OrderbookService {
       tokens,
       amount,
     });
+
+    const executeRequests = {
+      to: String(await _executeRequests.to!),
+      value: String(_executeRequests.value!),
+      data: _executeRequests.data,
+    };
+
+    const relayRequests: MetaTransactionData[] =
+      receiveFundsRequests.concat(executeRequests);
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
     const signer =
@@ -163,7 +183,9 @@ export class OrderbookService {
     // First, we relay receiveFunds.
     {
       // Create the MetaTransactionData.
-      const transactions = await createTransactions([receiveFundsRequests]);
+      const transactions = await createTransactions({
+        transactions: relayRequests,
+      });
 
       // Create the gelato relay pack using an initialized SCW.
       const gelatoRelayPack = await createGelatoRelayPack({
@@ -186,7 +208,7 @@ export class OrderbookService {
       // Execute the relay transaction using gelato.
       await executeRelayTransaction({
         gelatoRelayPack,
-        signSafeTransaction: safeTransaction,
+        signedSafeTransaction: safeTransaction,
       });
 
       // update the status of the orderbook.
