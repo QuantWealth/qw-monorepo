@@ -5,9 +5,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
 } from '@nestjs/common';
 import { SavingService } from './saving.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
 
 @Controller('saving')
 export class SavingController {
@@ -19,8 +21,8 @@ export class SavingController {
    */
   @HttpCode(HttpStatus.OK)
   @Get('all')
-  getAllSavings() {
-    const data = this.savingService.getAllSavings();
+  getAllSavings(@Query() savingApyQueryDto: SavingApyQueryDto) {
+    const data = this.savingService.getAllSavings(savingApyQueryDto);
 
     return {
       statusCode: HttpStatus.OK,

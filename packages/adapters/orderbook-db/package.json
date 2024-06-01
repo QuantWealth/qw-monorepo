@@ -6,8 +6,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "boot": "sh ./etc/boot-db",
-    "station": "sh ./etc/station-db"
+    "boot": "bash ./etc/boot.sh",
+    "station": "bash ./etc/station.sh"
   },
   "dependencies": {
     "@types/node": "^20.12.11",

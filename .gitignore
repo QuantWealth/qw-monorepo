@@ -1,2 +1,8 @@
+# If using yarn 2.x, remove these three lines to commit your dependencies to git.
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+
+
 node_modules
 dist
