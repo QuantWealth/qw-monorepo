@@ -8394,14 +8394,14 @@ __metadata:
 
 "qw-orderbook-db@file:../../adapters/orderbook-db::locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook":
   version: 0.0.1
-  resolution: "qw-orderbook-db@file:../../adapters/orderbook-db#../../adapters/orderbook-db::hash=a18738&locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook"
+  resolution: "qw-orderbook-db@file:../../adapters/orderbook-db#../../adapters/orderbook-db::hash=8022d9&locator=%40qw%2Forderbook%40workspace%3Apackages%2Fagents%2Forderbook"
   dependencies:
     "@types/node": "npm:^20.12.11"
     mongodb: "npm:^6.6.1"
     mongoose: "npm:^8.3.4"
     node: "npm:^20.13.0"
     typescript: "npm:^5.4.5"
-  checksum: 10c0/325c06441e580fb0169cf1a37c3e701896f2b2b4c4e57b600e9a38a009cf9d8e1f522930264c5820d6dd0ac96cee5daa3ed0a5fba470877d1f4b21aea5ecd359
+  checksum: 10c0/ea33d172d28ecc3c30e3f68c4b28a7c68bd1293c2436de9b4fe98a5a98022c818bcfcac156da81bafd48a96da26860135aea7e93b337fbb0050c6393336250f9
   languageName: node
   linkType: hard
 
