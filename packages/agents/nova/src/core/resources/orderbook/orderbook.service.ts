@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DefiApyQueryDto } from './dto/approve.dto';
 import { DefiApyResponse } from './dto/execute.dto';
 import {
@@ -17,9 +17,13 @@ import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { getOrders, IOrder } from '@qw/orderbook-db';
 import { ethers } from 'ethers';
 import { getConfig } from '../../../config';
+import { OrderModel } from '@qw/orderbook-db/dist/schema';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class OrderbookService {
+  @Inject('ORDER_MODEL')
+  private orderModel: typeof OrderModel,
   private wallet;
   public config;
   public signer;
@@ -59,7 +63,25 @@ export class OrderbookService {
     });
   }
 
+  // creates the pending order in orderbook and sends the approval transaction to gelato
   async sendApproveTransaction(
+    userScwAddress: string,
+    userSignedTransaction: MetaTransactionData,
+    amount: string,
+    strategyType: "FLEXI" | "FIXED"
+  ) {
+    const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
+    const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
+    const dapps = [qwAaveV3Address];
+    try {
+      await this._createOrder(userScwAddress, amounts, dapps, userSignedTransaction, strategyType);
+      await this._sendApproveTransaction(userScwAddress, userSignedTransaction);
+    } catch (err) {
+      console.error('Error sending approving tx:', err);
+    }
+  }
+
+  private async _sendApproveTransaction(
     userScwAddress: string,
     userSignedTransaction: MetaTransactionData,
   ) {
@@ -88,6 +110,31 @@ export class OrderbookService {
       gelatoRelayPack,
       signedSafeTransaction: safeTransaction,
     });
+  }
+
+  // internal fn
+  private async _createOrder(
+    userScwAddress: string,
+    amounts: string[],
+    dapps: string[],
+    userSignedTransaction: MetaTransactionData,
+    strategyType: "FLEXI" | "FIXED" // TODO: make it enum
+  ) {
+    const currentTimestamp = Date.now();
+
+    this.orderModel.create({
+      id: uuidv4(),
+      signer: userScwAddress,
+      wallet: userScwAddress,
+      dapps,
+      amounts,
+      signatures: [userSignedTransaction],
+      status: "P",
+      strategyType,
+      timestamps: {
+        placed: currentTimestamp // Set the current timestamp as the placed time
+      }
+    })
   }
 
   /**
@@ -192,6 +239,17 @@ export class OrderbookService {
       // update the status of the orderbook.
       // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
       // Order schema should really record the gelato relay ID in this case...
+      await Promise.all(
+        pendingOrders.map((order) =>
+          OrderModel.updateOne(
+            { id: order.id },
+            {
+              status: "E",
+              "timestamps.executed": Date.now(),
+            }
+          ).exec()
+        )
+      );
     }
   }
 }
