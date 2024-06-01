@@ -1,12 +1,10 @@
 import * as fs from 'fs';
 import Ajv from 'ajv';
 import { config as dotEnvConfig } from 'dotenv';
-import { Type, Static } from '@sinclair/typebox';
 import { NovaConfig, NovaConfigSchema } from './schema';
 
 // Load environment variables
 dotEnvConfig();
-
 
 export const getEnvConfig = (): NovaConfig => {
   let configJson: Record<string, any> = {};
@@ -45,6 +43,12 @@ export const getEnvConfig = (): NovaConfig => {
       configJson.environment ||
       configFile.environment ||
       'staging',
+    gelatoApiKey:
+      process.env.GELATO_API_KEY ||
+      configJson.gelatoApiKey ||
+      configFile.gelatoApiKey,
+    mnemonic:
+      process.env.MNEMONIC || configJson.mnemonic || configFile.mnemonic,
   };
 
   const ajv = new Ajv();
