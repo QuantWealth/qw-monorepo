@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "boot": "sh ./etc/boot-db",
+    "boot": "sh ./etc/boot.sh",
     "station": "sh ./etc/station-db"
   },
   "dependencies": {
