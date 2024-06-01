@@ -12,12 +12,15 @@ import {
   executeRelayTransaction,
   receiveFunds,
   execute,
-} from 'qw-utils';
+} from '@qw/utils';
 import { getOrders, IOrder } from 'qw-orderbook-db';
 import { ethers } from 'ethers';
+import { getConfig } from '../../../config';
 
 @Injectable()
 export class OrderbookService {
+
+  const config = await getConfig();
   /**
    * This service is called by /defi/apy endpoint
    * It retrieves the apy of the asset address provided
@@ -32,12 +35,12 @@ export class OrderbookService {
    * @param amount - The amount of the token to approve.
    * @returns A promise that resolves to an ethers.TransactionRequest object.
    */
-  async produceApproveTransaction(
+  async createApproveTransaction(
     tokenAddress: string,
     amount: string,
   ): Promise<ethers.TransactionRequest> {
     // TODO: Replace constants with configuration.
-    const rpc = 'https://1rpc.io/sepolia';
+    const rpc = this.config.chains[0].providers;
     const chainId = 11155111;
     const qwManagerAddress = '0x0000000000000000000000000000000000000123';
 
@@ -68,27 +71,22 @@ export class OrderbookService {
     // TODO: Replace constants with configuration.
     const rpc = 'https://1rpc.io/sepolia';
     const gelatoApiKey = 'fake-api-key';
+    const PRIVATE_KEY = ...;
 
     // Create the MetaTransactionData.
-    const transactions = await createTransactions([userSignedTransaction]);
+    // const transactions = await createTransactions([userSignedTransaction]);
 
     // Create the gelato relay pack using an initialized SCW.
-    const safe = await initSCW({ rpc, address: userScwAddress });
+    const safeQW = await init({ rpc, signer: QW_SIGNER, address: userScwAddress });
     const gelatoRelayPack = await createGelatoRelayPack({
       gelatoApiKey,
-      protocolKit: safe,
+      protocolKit: safeQW,
     });
 
     // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
     let safeTransaction = await relayTransaction({
-      transactions,
+      userSignedTransaction,
       gelatoRelayPack,
-    });
-
-    // Use protocol kit to sign the safe transaction, enabling it to be relayed.
-    safeTransaction = await signSafeTransaction({
-      protocolKit: safe,
-      safeTransaction,
     });
 
     // Execute the relay transaction using gelato.
@@ -123,7 +121,7 @@ export class OrderbookService {
     const provider = new ethers.JsonRpcProvider(rpc, chainId);
 
     const receiveFundsRequests: ethers.TransactionRequest[] = [];
-    const executeRequests: ethers.TransactionRequest[] = [];
+
     for (const order of pendingOrders) {
       // TODO: Orderbook IOrder schema should have token address(es).
       // User is supplying multiple dapps, but we will combine the amounts and we are assuming the same token address for now.
@@ -142,20 +140,32 @@ export class OrderbookService {
         }),
       );
 
-      // Form the execute transaction request, push to batch.
-      executeRequests.push(
-        execute({
-          contractAddress: qwManagerAddress,
-          provider,
-          target: order.dapps,
-          // TODO: Calldata must come from order? Will need to modify Order schema for this...
-          callData: Array(order.dapps.length).fill('0x'),
-          // TODO: Order schema must be modified to track token addresses as well...?
-          tokens: Array(order.dapps.length).fill(erc20TokenAddress),
-          amount: order.amounts.map(BigInt),
-        }),
-      );
+
+      // target array should be present at orders
+      const target = order.dapps; /// Addresses of the child contracts
+      const tokens = Array(order.dapps.length).fill(erc20TokenAddress); /// Token addresses for each child contract
+      const amount = order.amounts.map(BigInt); /// Amounts for each child contract
+
+
+      // get total amount and create array for 
     }
+
+
+    // execute request preparation
+
+
+    const callData = Array(order.dapps.length).fill('0x'); /// Calldata for each child contract // TODO: Calldata is prepared for each child contract
+
+
+    const executeRequests: ethers.TransactionRequest[] = execute({
+      contractAddress: qwManagerAddress,
+      provider,
+      target,
+      callData,
+      tokens,
+      amount
+    });
+
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
     const signer =
@@ -190,41 +200,11 @@ export class OrderbookService {
         gelatoRelayPack,
         signSafeTransaction: safeTransaction,
       });
+
+
+      // update the status of the orderbook.
+      // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
+      // Order schema should really record the gelato relay ID in this case...
     }
-
-    // TODO: Next, we need to track gelato task ID to wait for completion.
-
-    // Finally, we batch execute.
-    {
-      // Create the MetaTransactionData.
-      const transactions = await createTransactions([executeRequests]);
-
-      // Create the gelato relay pack using an initialized SCW.
-      const gelatoRelayPack = await createGelatoRelayPack({
-        gelatoApiKey,
-        protocolKit: safe,
-      });
-
-      // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
-      let safeTransaction = await relayTransaction({
-        transactions,
-        gelatoRelayPack,
-      });
-
-      // Use protocol kit to sign the safe transaction, enabling it to be relayed.
-      safeTransaction = await signSafeTransaction({
-        protocolKit: safe,
-        safeTransaction,
-      });
-
-      // Execute the relay transaction using gelato.
-      await executeRelayTransaction({
-        gelatoRelayPack,
-        signSafeTransaction: safeTransaction,
-      });
-    }
-
-    // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
-    // Order schema should really record the gelato relay ID in this case...
   }
 }

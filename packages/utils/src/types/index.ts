@@ -3,3 +3,4 @@ export * from './compound';
 export * from './uniswap';
 export * from './abiCoder';
 export * from './safe';
+export * from './primitives';
