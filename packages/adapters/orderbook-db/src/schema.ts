@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 /// TODO: amounts, dapps, signatures, stratrgyType need to be in a object[] 
 interface IOrder {
   id: string;
-  signer: string;
-  wallet: string;
+  signer: string; // signer address
+  wallet: string; // SCW wallet address
   timestamps: {
     placed: number;
     executed?: number;
@@ -35,7 +35,7 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   signatures: [{ type: String, required: true }],
   status: { type: String, enum: ["P", "E", "C"], required: true },
   hashes: [{ type: String }],
-  strategyType: { type: String, enum: ["FLEXY", "FIXED"], required: true },
+  strategyType: { type: String, enum: ["FLEXI", "FIXED"], required: true },
 });
 
 // Pre-save middleware to set the order ID.
