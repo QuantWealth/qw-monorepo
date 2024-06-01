@@ -106,6 +106,7 @@ export class OrderbookService {
     const erc20TokenAddress = USDT_SEPOLIA;
     const gelatoApiKey = this.config.gelatoApiKey;
     const qwScwAddress = await getSCW({ rpc, address: this.signer.address });
+    const signer = this.signer;
 
     // Get the start and end dates for a period of 1 month into the past to now.
     const start = new Date();
@@ -175,8 +176,6 @@ export class OrderbookService {
       receiveFundsRequests.concat(executeRequests);
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
-    const signer =
-      '0x5d0f6356861e10edebf756675712773ccac4c7c65a0daf733c7d8747df911b6d';
     const safe = await initQW({ rpc, address: qwScwAddress, signer });
 
     // First, we relay receiveFunds.
