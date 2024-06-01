@@ -44,7 +44,7 @@ export const relayTransaction = async (args: {
 }
 
 export const signSafeTransaction = async (args: {
-    protocolKit: Safe //Protocol Kit instance of QW with Signer
+    protocolKit: Safe // Protocol Kit instance of QW with Signer
     safeTransaction: SafeTransaction
 }): Promise<SafeTransaction> => {
     const { protocolKit, safeTransaction } = args;

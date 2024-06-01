@@ -26,6 +26,15 @@ export const initSCW = async (args: CreateSafeSdkArgs): Promise<Safe> => {
     });
 }
 
+export const initQW = async (args: CreateSafeSdkArgs): Promise<Safe> => { 
+
+    return Safe.init({
+        provider: args.rpc,
+        signer: args.signer,
+        safeAddress: args.address,
+    });
+}
+
 export const createSCW = async (args: CreateSafeSdkArgs): Promise<Transaction> => {
     if(await args.safe.isSafeDeployed()) {
         throw new Error('Safe already deployed');
