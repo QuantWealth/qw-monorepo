@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { DefiApyQueryDto } from './dto/approve.dto';
 import { DefiApyResponse } from './dto/execute.dto';
 import {
-  initSCW,
   getSCW,
   initQW,
   approve,
@@ -155,7 +154,7 @@ export class OrderbookService {
     const amount = [totalSum];
     // execute request preparation
 
-    const callData = Array(order.dapps.length).fill('0x'); /// Calldata for each child contract // TODO: Calldata is prepared for each child contract
+    const callData = ['']; /// Calldata for each child contract
 
     const _executeRequests: ethers.TransactionRequest = execute({
       contractAddress: qwManagerAddress,
