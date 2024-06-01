@@ -47,8 +47,8 @@ export const getEnvConfig = (): NovaConfig => {
       process.env.GELATO_API_KEY ||
       configJson.gelatoApiKey ||
       configFile.gelatoApiKey,
-    mnemonic:
-      process.env.MNEMONIC || configJson.mnemonic || configFile.mnemonic,
+    privateKey:
+      process.env.PRIVATE_KEY || configJson.privateKey || configFile.privateKey,
   };
 
   const ajv = new Ajv();

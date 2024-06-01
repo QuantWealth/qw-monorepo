@@ -1,6 +1,5 @@
 import { Type, Static } from '@sinclair/typebox';
 import { TAddress, TLogLevel } from '@qw/utils';
-import { Mnemonic } from 'ethers';
 
 // Define the TChainConfig schema
 export const TChainConfig = Type.Object({
@@ -31,7 +30,7 @@ export const NovaConfigSchema = Type.Object({
   chains: Type.Record(Type.String(), TChainConfig),
   logLevel: TLogLevel,
   gelatoApiKey: Type.String(),
-  mnemonic: Type.String(),
+  privateKey: Type.String(),
   environment: Type.Union([
     Type.Literal('staging'),
     Type.Literal('production'),
