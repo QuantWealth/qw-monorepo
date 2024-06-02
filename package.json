@@ -1,6 +1,6 @@
 {
-  "name": "qw-monorepo",
-  "version": "1.0.0",
+  "name": "@qw/monorepo",
+  "version": "0.0.1",
   "description": "QuantWealth is an all-in-one wealth management solution that blends traditional finance (tradfi), AI, and crypto to provide safe and transparent returns.",
   "repository": "https://github.com/QuantWealth/qw-monorepo.git",
   "author": "sanchaymittal <sanchaymittal@gmail.com>",
@@ -10,18 +10,17 @@
     "packages/*",
     "packages/adapters/*",
     "packages/agents/*",
-    "packages/nodes/*",
-    "utils/*"
+    "packages/nodes/*"
   ],
   "scripts": {
     "build": "yarn workspaces foreach --all --parallel run build",
     "clean": "yarn cache clean && rm -rf node_modules && rm -rf packages/*/node_modules && rm -rf packages/*/dist && rm -rf packages/*/*/node_modules && rm -rf packages/*/*/dist"
   },
   "main": "index.js",
-  "packageManager": "yarn@4.2.2",
   "devDependencies": {
     "@typescript-eslint/parser": "^7.11.0",
     "ts-loader": "^9.5.1",
     "webpack": "^5.91.0"
-  }
+  },
+  "packageManager": "yarn@4.2.2"
 }
