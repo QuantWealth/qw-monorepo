@@ -54,6 +54,9 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --network-concurrency 1
+        run: yarn install
+
+      - name: Build
+        run: yarn build
 
       - run: yarn lint:check
