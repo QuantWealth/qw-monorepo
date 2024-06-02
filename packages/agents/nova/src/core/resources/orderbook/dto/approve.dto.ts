@@ -66,6 +66,12 @@ export class OrderbookSendApproveTxQueryDto {
   amount: string;
 }
 
+export class ApyResponse {
+  @IsString()
+  @IsNotEmpty()
+  apy: string;
+}
+
 export class OrderbookGetApproveTxResponseDto implements NovaResponse {
   @ApiProperty({
     description: 'Response message',
@@ -81,12 +87,6 @@ export class OrderbookGetApproveTxResponseDto implements NovaResponse {
     description: 'Response data',
   })
   data: ApyResponse;
-}
-
-export class ApyResponse {
-  @IsString()
-  @IsNotEmpty()
-  apy: string;
 }
 
 export class OrderbookSendResponseDto {
