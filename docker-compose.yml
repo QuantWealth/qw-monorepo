@@ -2,7 +2,7 @@ name: qw
 services:
   nova:
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
