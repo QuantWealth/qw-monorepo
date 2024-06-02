@@ -33,7 +33,8 @@
         packages = with pkgs; [
           bun
           just
-          nodejs_18
+          nodejs_20
+          yarn-berry
         ];
       };
     });

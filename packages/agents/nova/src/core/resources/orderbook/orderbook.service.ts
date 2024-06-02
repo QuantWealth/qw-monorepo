@@ -37,7 +37,7 @@ export class OrderbookService {
       this.config = await getConfig();
       this.wallet = new ethers.Wallet(this.config.privateKey);
 
-      const rpc = this.config.chains[0].providers[0];
+      const rpc = this.config.chains['11155111'].providers[0];
 
       this.provider = new ethers.JsonRpcProvider(rpc);
 
