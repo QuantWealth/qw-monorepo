@@ -13,6 +13,9 @@
     "packages/nodes/*"
   ],
   "scripts": {
+    "start:dev:nova": "yarn workspace @qw/nova start:dev",
+    "start:nova": "yarn workspace @qw/nova start",
+    "build:nova": "yarn workspace @qw/nova build",
     "build": "yarn workspaces foreach --all --parallel run build",
     "clean": "yarn cache clean && rm -rf node_modules && rm -rf packages/*/node_modules && rm -rf packages/*/dist && rm -rf packages/*/*/node_modules && rm -rf packages/*/*/dist"
   },
