@@ -19,5 +19,5 @@ export async function connectOrderbookDB(hostname?: string): Promise<Mongoose> {
   );
 }
 
-export { IOrder, IUser } from "./schema";
+export * from "./schema";
 export * from "./operations";

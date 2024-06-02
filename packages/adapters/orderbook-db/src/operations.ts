@@ -97,7 +97,7 @@ async function getOrder(orderId: string): Promise<IOrder | null> {
  * @param distribution - Optional. The distribution flag of the orders to filter (true for credit, false for debit).
  * @returns A promise resolving to an array of orders that match the given criteria.
  */
-async function getOrders(start: number, end: number, status?: string, distribution?: boolean): Promise<IOrder[]> {
+async function getOrders(start: Date, end: Date, status?: string, distribution?: boolean): Promise<IOrder[]> {
   const query: any = {
     "timestamps.placed": { $gte: start, $lte: end }
   };
