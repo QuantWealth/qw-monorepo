@@ -28,6 +28,7 @@ export const TRPCConfig = Type.Object({
 // Define the NovaConfigSchema
 export const NovaConfigSchema = Type.Object({
   chains: Type.Record(Type.String(), TChainConfig),
+  mongoUrl: Type.String(),
   logLevel: TLogLevel,
   gelatoApiKey: Type.String(),
   privateKey: Type.String(),

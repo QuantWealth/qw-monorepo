@@ -1,5 +1,6 @@
 {
   "logLevel": "debug",
+  "mongoUrl": "",
   "chains": {
     "11155111": {
       "providers": ["https://1rpc.io/sepolia"],

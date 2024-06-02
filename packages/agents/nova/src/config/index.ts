@@ -1,6 +1,6 @@
-import * as fs from 'fs';
 import Ajv from 'ajv';
 import { config as dotEnvConfig } from 'dotenv';
+import * as fs from 'fs';
 import { NovaConfig, NovaConfigSchema } from './schema';
 
 // Load environment variables
@@ -30,6 +30,9 @@ export const getEnvConfig = (): NovaConfig => {
   }
 
   const novaConfig: NovaConfig = {
+    mongoUrl: process.env.MONGO_URL
+      ? JSON.parse(process.env.MONGO_URL)
+      : configJson.mongoUrl || configFile.mongoUrl,
     chains: process.env.NOVA_CHAIN_CONFIG
       ? JSON.parse(process.env.NOVA_CHAIN_CONFIG)
       : configJson.chains || configFile.chains,

@@ -18,13 +18,14 @@ import { getOrders, IOrder, OrderModel } from '@qw/orderbook-db';
 import { ethers } from 'ethers';
 import { getConfig } from '../../../config';
 import { v4 as uuidv4 } from 'uuid';
+import { NovaConfig } from 'src/config/schema';
 
 @Injectable()
 export class OrderbookService {
   @Inject('ORDER_MODEL')
   private orderModel: typeof OrderModel = OrderModel;
   private wallet;
-  public config;
+  public config: NovaConfig;
   public signer;
   public provider;
 
@@ -37,8 +38,7 @@ export class OrderbookService {
       this.config = await getConfig();
       this.wallet = new ethers.Wallet(this.config.privateKey);
 
-      const rpc = this.config.chains[0].providers[0];
-
+      const rpc = Object.values(this.config.chains)[0].providers[0];
       this.provider = new ethers.JsonRpcProvider(rpc);
 
       this.signer = this.wallet.connect(this.provider);
