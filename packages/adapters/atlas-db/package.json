@@ -13,7 +13,6 @@
     "@types/node": "^20.12.11",
     "mongodb": "^6.6.1",
     "mongoose": "^8.3.4",
-    "node": "^20.13.0",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
