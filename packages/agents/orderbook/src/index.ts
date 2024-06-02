@@ -1,7 +1,7 @@
 import { connectOrderbookDB } from "@qw/orderbook-db";
 import { bootstrap } from "./server";
 import { loadConfig } from "./config";
-import { startPolling } from "./poller";
+// import { startPolling } from "./poller";
 
 // Setup the server
 const setup = async () => {
@@ -13,7 +13,7 @@ const setup = async () => {
 
   // Start the polling loop if handleExecutions is true
   if (config.handleExecutions) {
-    startPolling();
+    // startPolling();
   }
 };
 

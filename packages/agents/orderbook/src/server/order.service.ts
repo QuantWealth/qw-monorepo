@@ -39,7 +39,7 @@ export class OrderService {
     return getOrder(orderId);
   }
 
-  getOrders(start: number, end: number, status?: string, distribution?: boolean) {
+  getOrders(start: Date, end: Date, status?: string, distribution?: boolean) {
     return getOrders(start, end, status, distribution);
   }
 

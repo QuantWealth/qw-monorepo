@@ -1,4 +1,4 @@
-import { UserModel } from '@qw/orderbook-db/dist/schema';
+import { UserModel } from '@qw/orderbook-db';
 
 export const userProviders = [
   {

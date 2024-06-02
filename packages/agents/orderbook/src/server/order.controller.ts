@@ -45,8 +45,8 @@ export class OrderController {
 
   @Get()
   getOrders(
-    @Query('start') start: number,
-    @Query('end') end: number,
+    @Query('start') start: Date,
+    @Query('end') end: Date,
     @Query('status') status?: string,
     @Query('distribution') distribution?: boolean
   ) {

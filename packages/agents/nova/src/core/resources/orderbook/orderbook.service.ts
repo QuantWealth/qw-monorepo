@@ -14,16 +14,15 @@ import {
   USDT_SEPOLIA,
 } from '@qw/utils';
 import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
-import { getOrders, IOrder } from '@qw/orderbook-db';
+import { getOrders, IOrder, OrderModel } from '@qw/orderbook-db';
 import { ethers } from 'ethers';
 import { getConfig } from '../../../config';
-import { OrderModel } from '@qw/orderbook-db/dist/schema';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class OrderbookService {
   @Inject('ORDER_MODEL')
-  private orderModel: typeof OrderModel,
+  private orderModel: typeof OrderModel = OrderModel;
   private wallet;
   public config;
   public signer;
@@ -163,7 +162,7 @@ export class OrderbookService {
     end.setSeconds(end.getSeconds() + 10);
 
     // Get pending orders.
-    const pendingOrders: IOrder[] = getOrders(start, end, 'P', false);
+    const pendingOrders: IOrder[] = await getOrders(start, end, 'P', false);
     const provider = new ethers.JsonRpcProvider(rpc, chainId);
 
     const receiveFundsRequests: MetaTransactionData[] = [];

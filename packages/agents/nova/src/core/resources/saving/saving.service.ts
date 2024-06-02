@@ -3,7 +3,7 @@ import { SavingType, TSaving } from 'src/common/types';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ethers } from 'ethers';
 import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
-import { OrderModel } from '@qw/orderbook-db/dist/schema';
+import { OrderModel } from '@qw/orderbook-db';
 
 const getRandomApy = (min: number, max: number): number => {
   return parseFloat((Math.random() * (max - min) + min).toFixed(2));
