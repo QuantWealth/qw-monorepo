@@ -1,9 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { OrderModel } from '@qw/orderbook-db';
+import { ethers } from 'ethers';
 import { SavingType, TSaving } from 'src/common/types';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { ethers } from 'ethers';
 import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
-import { OrderModel } from '@qw/orderbook-db';
 
 const getRandomApy = (min: number, max: number): number => {
   return parseFloat((Math.random() * (max - min) + min).toFixed(2));
@@ -11,6 +11,8 @@ const getRandomApy = (min: number, max: number): number => {
 
 @Injectable()
 export class SavingService {
+  private readonly logger = new Logger(SavingService.name);
+
   constructor(
     @Inject('ORDER_MODEL')
     private orderModel: typeof OrderModel,
@@ -48,7 +50,7 @@ export class SavingService {
 
       return amounts;
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      this.logger.error('Error fetching orders:', error);
       throw error;
     }
   }

@@ -1,50 +1,53 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { IOrder, OrderModel, getOrders } from '@qw/orderbook-db';
 import {
+  USDT_SEPOLIA,
+  approve,
+  createGelatoRelayPack,
+  createTransactions,
+  execute,
+  executeRelayTransaction,
   getSCW,
   initQW,
-  approve,
-  createTransactions,
-  createGelatoRelayPack,
+  receiveFunds,
   relayTransaction,
   signSafeTransaction,
-  executeRelayTransaction,
-  receiveFunds,
-  execute,
-  USDT_SEPOLIA,
 } from '@qw/utils';
 import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
-import { getOrders, IOrder, OrderModel } from '@qw/orderbook-db';
 import { ethers } from 'ethers';
-import { getConfig } from '../../../config';
-import { v4 as uuidv4 } from 'uuid';
+import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
+import { v4 as uuidv4 } from 'uuid';
+import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
 
 @Injectable()
 export class OrderbookService {
   @Inject('ORDER_MODEL')
   private orderModel: typeof OrderModel = OrderModel;
+  private readonly logger = new Logger(OrderbookService.name);
   private wallet;
-  public config: NovaConfig;
+  private config: NovaConfig;
   public signer;
   public provider;
 
-  constructor() {
+  constructor(
+    private configService: ConfigService,
+  ) {
     this.init();
   }
 
   async init() {
     try {
-      this.config = await getConfig();
+      this.config = this.configService.get();
       this.wallet = new ethers.Wallet(this.config.privateKey);
 
       const rpc = Object.values(this.config.chains)[0].providers[0];
       this.provider = new ethers.JsonRpcProvider(rpc);
 
       this.signer = this.wallet.connect(this.provider);
-      console.log('Wallet initialized with address:', this.signer.address);
+      this.logger.log('Wallet initialized with address:', this.signer.address);
     } catch (error) {
-      console.error('Error initializing wallet:', error);
+      this.logger.error('Error initializing wallet:', error);
     }
   }
 
@@ -71,7 +74,7 @@ export class OrderbookService {
    * @param query The query containing amount, wallet addresses, signed transaction, and strategy type details.
   */
   async sendApproveTransaction(query: OrderbookSendApproveTxQueryDto) {
-    const {amount, userWalletAddress, userScwAddress, userSignedTransaction, strategyType} = query;
+    const { amount, userWalletAddress, userScwAddress, userSignedTransaction, strategyType } = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
     const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
     const dapps = [qwAaveV3Address];
@@ -79,7 +82,7 @@ export class OrderbookService {
       await this._createOrder(userWalletAddress, userScwAddress, amounts, dapps, userSignedTransaction, strategyType);
       await this._sendApproveTransaction(userScwAddress, userSignedTransaction);
     } catch (err) {
-      console.error('Error sending approving tx:', err);
+      this.logger.error('Error sending approving tx:', err);
     }
   }
 

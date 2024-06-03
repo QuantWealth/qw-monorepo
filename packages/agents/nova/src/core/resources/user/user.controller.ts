@@ -52,7 +52,7 @@ export class UserController {
     type: UserInitResponseDto,
   })
   @Post('init')
-  async userInit(@Body() body: UserInitBodyDto): Promise<void> {
+  async userInit(@Body() body: UserInitBodyDto): Promise<IUser> {
     return await this.userService.userInit(body);
   }
 

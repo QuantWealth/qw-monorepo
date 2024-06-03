@@ -1,33 +1,41 @@
 import { BalancesResponse, CovalentClient } from '@covalenthq/client-sdk';
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { IUser, UserModel } from '@qw/orderbook-db';
 import {
-  initSCW,
-  createSCW,
-  getSCW,
-  isSCWDeployed,
-  mint,
-  createTransactions,
-  normalizeMetaTransaction,
   createGelatoRelayPack,
-  relayTransaction,
-  signSafeTransaction,
+  createSCW,
+  createTransactions,
   executeRelayTransaction,
   getDeployedSCW,
+  getSCW,
+  initSCW,
+  isSCWDeployed,
+  mint,
+  normalizeMetaTransaction,
+  relayTransaction,
+  signSafeTransaction,
 } from '@qw/utils';
+import { ethers } from 'ethers';
+import { USDC_SEPOLIA } from 'src/common/constants';
+import { NovaConfig } from 'src/config/schema';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
-import { USDC_SEPOLIA } from 'src/common/constants';
-import { ethers } from 'ethers';
 import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
+import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class UserService {
+  private config: NovaConfig;
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @Inject('USER_MODEL')
     private userModel: typeof UserModel,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.config = this.configService.get();
+  }
 
   /**
    * This service is called by /user/balance endpoint
@@ -55,10 +63,11 @@ export class UserService {
    * It deploys the smart contract and initializes the user
    * @returns transaction
    */
-  async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<void> {
+  async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<IUser> {
     // TODO: move to environment variables for security
-    const rpcUrl = 'https://1rpc.io/sepolia';
-    const gelatoApiKey = 'gelato_api_key';
+    const rpcUrl = Object.values(this.config.chains)[0].providers[0];
+
+    const gelatoApiKey = this.config.gelatoApiKey;
     const qwSafeAddress = ''; // Address of the safe
     const qwSafeOwnerPrivateKey = ''; // Private key of the safe owner
 
@@ -73,8 +82,18 @@ export class UserService {
     });
 
     // If SCW is already deployed, throw an error
-    if (hasSCW) {
-      throw new HttpException('SCW already deployed', HttpStatus.BAD_REQUEST);
+    const users = await this.userModel.find({ id: walletAddress });
+    if (users.length > 0) {
+      // Update the user's providers if they already exist
+      await this.userModel.updateOne(
+        {
+          id: walletAddress,
+        },
+        {
+          $addToSet: { providers: provider },
+        },
+      );
+      return users[0];
     }
 
     // Create the SCW deployment transaction
@@ -143,27 +162,15 @@ export class UserService {
       gelatoRelayPack,
     });
 
-    // Check if the user already exists in the database
-    if ((await this.userModel.find({ id: walletAddress })).length > 0) {
-      // Update the user's providers if they already exist
-      await this.userModel.updateOne(
-        {
-          id: walletAddress,
-        },
-        {
-          $addToSet: { providers: provider },
-        },
-      );
-    } else {
-      // Create a new user record if they do not exist
-      await this.userModel.create({
-        id: walletAddress,
-        wallet: safeAddress,
-        network: 'eth-sepolia',
-        deployed: true,
-        providers: [provider],
-      });
-    }
+    // Create a new user record if they do not exist
+    const user = await this.userModel.create({
+      id: walletAddress,
+      wallet: safeAddress,
+      network: 'eth-sepolia',
+      deployed: true,
+      providers: [provider],
+    });
+    return user;
   }
 
   /**

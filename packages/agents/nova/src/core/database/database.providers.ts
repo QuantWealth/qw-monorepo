@@ -1,13 +1,15 @@
-import * as mongoose from 'mongoose';
+
 import { connectOrderbookDB } from '@qw/orderbook-db';
-import { getConfig } from 'src/config';
+import * as mongoose from 'mongoose';
+import { ConfigService } from 'src/config/config.service';
 
 export const databaseProviders = [
   {
     provide: 'DATABASE_CONNECTION',
-    useFactory: async (): Promise<typeof mongoose> =>
+    inject: [ConfigService],
+    useFactory: async (configService: ConfigService): Promise<typeof mongoose> =>
       {
-        const config = await getConfig();
+        const config = configService.get();
         return connectOrderbookDB(config.mongoUrl);
       },
   },
