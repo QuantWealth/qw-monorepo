@@ -1777,6 +1777,7 @@ __metadata:
     "@nestjs/testing": "npm:^10.0.0"
     "@qw/orderbook-db": "workspace:^"
     "@qw/utils": "workspace:^"
+    "@safe-global/protocol-kit": "npm:^4.0.1"
     "@types/express": "npm:^4.17.17"
     "@types/jest": "npm:^29.5.2"
     "@types/node": "npm:^20.3.1"
