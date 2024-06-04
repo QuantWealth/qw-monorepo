@@ -10,6 +10,9 @@ import {
 import { SavingService } from './saving.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
+import { ApiResponse } from '@nestjs/swagger';
+import { TSaving } from 'src/common/types';
+import { QuerySavingAllDto } from './dto/saving-all-response.dto';
 
 @Controller('saving')
 export class SavingController {
@@ -20,15 +23,16 @@ export class SavingController {
    * @returns savings array
    */
   @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'All savings strategies',
+    type: QuerySavingAllDto,
+  })
   @Get('all')
-  getAllSavings(@Query() savingApyQueryDto: SavingApyQueryDto) {
-    const data = this.savingService.getAllSavings(savingApyQueryDto);
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Retrieved all savings successfully',
-      data,
-    };
+  getAllSavings(
+    @Query() savingApyQueryDto: SavingApyQueryDto,
+  ): Promise<Array<TSaving>> {
+    return this.savingService.getAllSavings(savingApyQueryDto);
   }
 
   /**
