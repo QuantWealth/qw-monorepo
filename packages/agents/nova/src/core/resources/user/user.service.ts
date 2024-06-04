@@ -1,5 +1,11 @@
 import { BalancesResponse, CovalentClient } from '@covalenthq/client-sdk';
-import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { IUser, UserModel } from '@qw/orderbook-db';
 import {
   createGelatoRelayPack,
@@ -64,26 +70,23 @@ export class UserService {
    * @returns transaction
    */
   async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<IUser> {
-    // TODO: move to environment variables for security
-    const rpcUrl = Object.values(this.config.chains)[0].providers[0];
+    const rpcUrl = Object.values(this.config.chains)[0].providers[0]; // RPC URL
 
     const gelatoApiKey = this.config.gelatoApiKey;
-    const qwSafeAddress = ''; // Address of the safe
-    const qwSafeOwnerPrivateKey = ''; // Private key of the safe owner
-
+    const qwSafeAddress = '0xC22E238cbAb8B34Dc0014379E00B38D15D806115'; // Address of the safe
     // Initialize the user's smart contract wallet (SCW)
     const userSafe = await initSCW({ rpc: rpcUrl, address: walletAddress });
 
-    // Check if the SCW is already deployed
-    const hasSCW = await isSCWDeployed({
-      rpc: rpcUrl,
-      address: walletAddress,
-      safe: userSafe,
-    });
+    // // Check if the SCW is already deployed
+    // const hasSCW = await isSCWDeployed({
+    //   rpc: rpcUrl,
+    //   address: walletAddress,
+    //   safe: userSafe,
+    // });
 
-    // If SCW is already deployed, throw an error
+    // If SCW is already deployed
     const users = await this.userModel.find({ id: walletAddress });
-    if (users.length > 0) {
+    if (users.length > 0 && users[0].deployed) {
       // Update the user's providers if they already exist
       await this.userModel.updateOne(
         {
@@ -111,15 +114,15 @@ export class UserService {
     });
 
     // Create a mint transaction for the user's SCW
-    const mintTx = mint({
-      contractAddress: USDC_SEPOLIA,
-      provider: new ethers.JsonRpcProvider(rpcUrl),
-      amount: ethers.parseUnits('500', 18), // Mint 500 tokens
-      recipientAddress: safeAddress,
-    });
+    // const mintTx = mint({
+    //   contractAddress: USDC_SEPOLIA,
+    //   provider: new ethers.JsonRpcProvider(rpcUrl),
+    //   amount: ethers.parseUnits('500', 18), // Mint 500 tokens
+    //   recipientAddress: safeAddress,
+    // });
 
     // Prepare the array of transactions
-    const transactionsArr = [deploymentTransaction, mintTx];
+    const transactionsArr = [deploymentTransaction];
 
     // Normalize transactions to MetaTransactionData format
     const metaTransactionsArr = transactionsArr.map((tx) =>
@@ -135,7 +138,7 @@ export class UserService {
     const qwSafe = await getDeployedSCW({
       rpc: rpcUrl,
       safeAddress: qwSafeAddress,
-      signer: qwSafeOwnerPrivateKey,
+      signer: this.config.privateKey,
     });
 
     // Create Gelato relay pack with the protocol kit and API key
@@ -155,6 +158,9 @@ export class UserService {
       safeTransaction,
       protocolKit: qwSafe,
     });
+
+    console.log('safeTransaction:', safeTransaction);
+    console.log('signedSafeTransaction:', signedSafeTransaction);
 
     // Execute the relay transaction
     executeRelayTransaction({
