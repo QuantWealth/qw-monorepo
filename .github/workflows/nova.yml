@@ -32,6 +32,14 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Create config file
+        env:
+          NOVA_CONFIG: ${{ secrets.NOVA_CONFIG }}
+        run: |
+          touch packages/agents/nova/src/config/config.json
+          echo "$NOVA_CONFIG" >> packages/agents/nova/src/config/config.json
+        shell: bash
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
