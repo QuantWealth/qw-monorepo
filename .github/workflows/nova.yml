@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: nova
-  ECS_SERVICE: nova
+  ECS_SERVICE: nova-ecs-srv
   ECS_CLUSTER: NovaCluster
   CONTAINER_NAME: "nova"
 
