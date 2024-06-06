@@ -8,16 +8,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IUser } from '@qw/orderbook-db';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
-import { UserInitResponseDto } from './dto/user-init-response.dto';
+import { UserInitResponseDto, UserResponseDto } from './dto/user-init-response.dto';
 import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
 import { UserService } from './user.service';
 
+@ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -52,7 +53,7 @@ export class UserController {
     type: UserInitResponseDto,
   })
   @Post('init')
-  async userInit(@Body() body: UserInitBodyDto): Promise<IUser> {
+  async userInit(@Body() body: UserInitBodyDto): Promise<UserResponseDto> {
     return await this.userService.userInit(body);
   }
 

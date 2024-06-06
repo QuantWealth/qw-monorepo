@@ -7,13 +7,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { SavingService } from './saving.service';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TSaving } from 'src/common/types';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QuerySavingAllDto } from './dto/saving-all-response.dto';
+import { SavingApyQueryDto } from './dto/saving-apy-query.dto';
+import { SavingService } from './saving.service';
 
+@ApiTags('saving')
 @Controller('saving')
 export class SavingController {
   constructor(private readonly savingService: SavingService) {}

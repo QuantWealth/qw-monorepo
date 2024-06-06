@@ -1,11 +1,12 @@
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto, OrderbookSendResponseDto } from './dto/approve.dto';
 import { OrderbookService } from './orderbook.service';
 import { ethers } from 'ethers';
 import { Post } from '@nestjs/common';
 import { Body } from '@nestjs/common';
 
+@ApiTags('orderbook')
 @Controller('orderbook')
 export class OrderbookController {
   constructor(private readonly orderbookService: OrderbookService) {}

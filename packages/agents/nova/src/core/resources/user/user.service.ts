@@ -15,20 +15,17 @@ import {
   getDeployedSCW,
   getSCW,
   initSCW,
-  isSCWDeployed,
-  mint,
   normalizeMetaTransaction,
   relayTransaction,
-  signSafeTransaction,
+  signSafeTransaction
 } from '@qw/utils';
-import { ethers } from 'ethers';
-import { USDC_SEPOLIA } from 'src/common/constants';
+import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
+import { UserResponseDto } from './dto/user-init-response.dto';
 import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
-import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class UserService {
@@ -69,7 +66,7 @@ export class UserService {
    * It deploys the smart contract and initializes the user
    * @returns transaction
    */
-  async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<IUser> {
+  async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<UserResponseDto> {
     const rpcUrl = Object.values(this.config.chains)[0].providers[0]; // RPC URL
 
     const gelatoApiKey = this.config.gelatoApiKey;
