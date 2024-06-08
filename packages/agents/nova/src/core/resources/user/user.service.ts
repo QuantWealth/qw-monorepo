@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { IUser, UserModel } from '@qw/orderbook-db';
 import {
+  USDT_SEPOLIA,
+  mint,
   createGelatoRelayPack,
   createSCW,
   createTransactions,
@@ -17,8 +19,9 @@ import {
   initSCW,
   normalizeMetaTransaction,
   relayTransaction,
-  signSafeTransaction
+  signSafeTransaction,
 } from '@qw/utils';
+import {JsonRpcProvider, parseUnits} from 'ethers';
 import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
@@ -111,15 +114,15 @@ export class UserService {
     });
     console.log('safeAddress:', safeAddress);
     // Create a mint transaction for the user's SCW
-    // const mintTx = mint({
-    //   contractAddress: USDC_SEPOLIA,
-    //   provider: new ethers.JsonRpcProvider(rpcUrl),
-    //   amount: ethers.parseUnits('500', 18), // Mint 500 tokens
-    //   recipientAddress: safeAddress,
-    // });
+    const mintTx = mint({
+      contractAddress: USDT_SEPOLIA,
+      provider: new JsonRpcProvider(rpcUrl),
+      amount: parseUnits('500', 18), // Mint 500 tokens
+      recipientAddress: safeAddress,
+    });
 
     // Prepare the array of transactions
-    const transactionsArr = [deploymentTransaction];
+    const transactionsArr = [deploymentTransaction, mintTx];
 
     // Normalize transactions to MetaTransactionData format
     const metaTransactionsArr = transactionsArr.map((tx) =>
