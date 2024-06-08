@@ -7,28 +7,33 @@ import {
   createTransactions,
   execute,
   executeRelayTransaction,
+  executeSignedTypedDataRelayTx,
+  getDeployedSCW,
   getSCW,
+  getSafeTxTypedData,
   initQW,
+  initSCW,
+  normalizeMetaTransaction,
   receiveFunds,
   relayTransaction,
-  signSafeTransaction,
+  signSafeTransaction
 } from '@qw/utils';
 import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
-import { ethers } from 'ethers';
+import { JsonRpcProvider, Wallet, ethers } from 'ethers';
 import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
 import { v4 as uuidv4 } from 'uuid';
-import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
+import { OrderbookGetApproveTxDataDto, OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
 
 @Injectable()
 export class OrderbookService {
   @Inject('ORDER_MODEL')
   private orderModel: typeof OrderModel = OrderModel;
   private readonly logger = new Logger(OrderbookService.name);
-  private wallet;
+  private wallet: Wallet;
   private config: NovaConfig;
-  public signer;
-  public provider;
+  public signer: Wallet;
+  public provider: JsonRpcProvider;
 
   constructor(
     private configService: ConfigService,
@@ -54,73 +59,95 @@ export class OrderbookService {
   /**
    * Creates an approval transaction to allow spending tokens from the user's wallet.
    * @param query The query containing asset address and amount details.
-   * @returns A promise that resolves to an ethers.TransactionRequest object representing the approval transaction.
+   * @returns A promise that resolves to an Transaction object representing the approval transaction.
   */
-  async createApproveTransaction(query: OrderbookGetApproveTxQueryDto): Promise<ethers.TransactionRequest> {
-    const { assetAddress, amount } = query;
-    const qwManagerAddress =
-      this.config.chains[0].contractAddresses.QWManager.address;
+  async createApproveTransaction(query: OrderbookGetApproveTxQueryDto): Promise<OrderbookGetApproveTxDataDto> {
+    try {
+      this.logger.log('Creating approve transaction:', query);
+      const { assetAddress, walletAddress, amount } = query;
+      const qwManagerAddress =
+        Object.values(this.config.chains)[0].contractAddresses.QWManager.address;
 
-    return approve({
-      contractAddress: assetAddress,
-      amount: BigInt(amount),
-      provider: this.provider,
-      spender: qwManagerAddress,
-    });
+      const txData = approve({
+        contractAddress: assetAddress,
+        amount: BigInt(amount),
+        provider: this.provider,
+        spender: qwManagerAddress,
+      });
+
+      const rpc = Object.values(this.config.chains)[0].providers[0];
+
+      // Get QW's deployed Safe's instance
+      const qwSafe = await getDeployedSCW({
+        rpc: rpc,
+        safeAddress: walletAddress,
+        signer: this.config.privateKey,
+      });
+
+      const typedData = await getSafeTxTypedData({
+        protocolKit: qwSafe,
+        txData: txData,
+      });
+
+      return {
+        txData: txData,
+        typedData: JSON.stringify(typedData),
+      }
+    } catch (error) {
+      this.logger.error('Error creating approve transaction:', error);
+    }
   }
 
   /**
    * Creates a pending order in the orderbook and sends the approval transaction to Gelato.
    * @param query The query containing amount, wallet addresses, signed transaction, and strategy type details.
   */
-  async sendApproveTransaction(query: OrderbookSendApproveTxQueryDto) {
-    const { amount, userWalletAddress, userScwAddress, userSignedTransaction, strategyType } = query;
+  async sendApproveTransaction(query: OrderbookSendApproveTxQueryDto): Promise<{ taskId: string }> {
+    const { amount, signerAddress, walletAddress, metaTransaction, signature, strategyType } = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
     const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
     const dapps = [qwAaveV3Address];
     try {
-      await this._createOrder(userWalletAddress, userScwAddress, amounts, dapps, userSignedTransaction, strategyType);
-      await this._sendApproveTransaction(userScwAddress, userSignedTransaction);
+      await this._createOrder(signerAddress, walletAddress, amounts, dapps, metaTransaction, strategyType);
+      return this._sendApproveTransaction(signerAddress, metaTransaction, signature);
     } catch (err) {
+      console.log(err)
       this.logger.error('Error sending approving tx:', err);
     }
   }
 
   private async _sendApproveTransaction(
-    userScwAddress: string,
-    userSignedTransaction: MetaTransactionData,
-  ) {
-    const rpc = this.config.chains[0].providers[0];
+    signerAddress: string,
+    metaTransaction: MetaTransactionData,
+    signature: string,
+  ): Promise<{ taskId: string }>  {
+    const rpc = Object.values(this.config.chains)[0].providers[0];
     const gelatoApiKey = this.config.gelatoApiKey;
 
-    // Create the gelato relay pack using an initialized SCW.
-    const safeQW = await initQW({
-      rpc,
-      signer: this.signer,
-      address: userScwAddress,
+    const qwSafe = await initSCW({
+      rpc: rpc,
+      address: signerAddress,
     });
+
+    // // Create Gelato relay pack with the protocol kit and API key
     const gelatoRelayPack = await createGelatoRelayPack({
+      protocolKit: qwSafe,
       gelatoApiKey,
-      protocolKit: safeQW,
     });
 
-    // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
-    const safeTransaction = await relayTransaction({
-      transactions: [userSignedTransaction],
+    return executeSignedTypedDataRelayTx({
+      safe: qwSafe,
       gelatoRelayPack,
-    });
-
-    // Execute the relay transaction using gelato.
-    await executeRelayTransaction({
-      gelatoRelayPack,
-      signedSafeTransaction: safeTransaction,
+      metaTransaction,
+      signer: signerAddress,
+      signature: signature,
     });
   }
 
   // internal fn
   private async _createOrder(
-    userWalletAddress: string,
-    userScwAddress: string,
+    signerAddress: string,
+    walletAddress: string,
     amounts: string[],
     dapps: string[],
     userSignedTransaction: MetaTransactionData,
@@ -130,8 +157,8 @@ export class OrderbookService {
 
     this.orderModel.create({
       id: uuidv4(),
-      signer: userWalletAddress,
-      wallet: userScwAddress,
+      signer: signerAddress,
+      wallet: walletAddress,
       dapps,
       amounts,
       signatures: [userSignedTransaction],
@@ -226,7 +253,7 @@ export class OrderbookService {
       receiveFundsRequests.concat(executeRequests);
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
-    const safe = await initQW({ rpc, address: qwScwAddress, signer });
+    const safe = await initQW({ rpc, address: qwScwAddress, signer: this.signer.privateKey });
 
     // First, we relay receiveFunds.
     {

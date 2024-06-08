@@ -66,13 +66,13 @@ export class UserService {
    * It deploys the smart contract and initializes the user
    * @returns transaction
    */
-  async userInit({ walletAddress, provider }: UserInitBodyDto): Promise<UserResponseDto> {
+  async userInit({ signerAddress, provider }: UserInitBodyDto): Promise<UserResponseDto> {
     const rpcUrl = Object.values(this.config.chains)[0].providers[0]; // RPC URL
 
     const gelatoApiKey = this.config.gelatoApiKey;
     const qwSafeAddress = '0xC22E238cbAb8B34Dc0014379E00B38D15D806115'; // Address of the safe
     // Initialize the user's smart contract wallet (SCW)
-    const userSafe = await initSCW({ rpc: rpcUrl, address: walletAddress });
+    const userSafe = await initSCW({ rpc: rpcUrl, address: signerAddress });
 
     // // Check if the SCW is already deployed
     // const hasSCW = await isSCWDeployed({
@@ -82,12 +82,12 @@ export class UserService {
     // });
 
     // If SCW is already deployed
-    const users = await this.userModel.find({ id: walletAddress });
+    const users = await this.userModel.find({ id: signerAddress });
     if (users.length > 0 && users[0].deployed) {
       // Update the user's providers if they already exist
       await this.userModel.updateOne(
         {
-          id: walletAddress,
+          id: signerAddress,
         },
         {
           $addToSet: { providers: provider },
@@ -99,17 +99,17 @@ export class UserService {
     // Create the SCW deployment transaction
     const deploymentTransaction = await createSCW({
       rpc: rpcUrl,
-      address: walletAddress,
+      address: '', // TODO: remove this not required here
       safe: userSafe,
     });
 
     // Get the SCW address
     const safeAddress = await getSCW({
       rpc: rpcUrl,
-      address: walletAddress,
+      address: '', // TODO: remove this not required here
       safe: userSafe,
     });
-
+    console.log('safeAddress:', safeAddress);
     // Create a mint transaction for the user's SCW
     // const mintTx = mint({
     //   contractAddress: USDC_SEPOLIA,
@@ -167,7 +167,7 @@ export class UserService {
 
     // Create a new user record if they do not exist
     const user = await this.userModel.create({
-      id: walletAddress,
+      id: signerAddress,
       wallet: safeAddress,
       network: 'eth-sepolia',
       deployed: true,

@@ -1,10 +1,7 @@
-import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-import { OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto, OrderbookSendResponseDto } from './dto/approve.dto';
+import { OrderbookGetApproveTxDataDto, OrderbookGetApproveTxQueryDto, OrderbookGetApproveTxResponseDto, OrderbookSendApproveTxQueryDto, OrderbookSendResponseDto } from './dto/approve.dto';
 import { OrderbookService } from './orderbook.service';
-import { ethers } from 'ethers';
-import { Post } from '@nestjs/common';
-import { Body } from '@nestjs/common';
 
 @ApiTags('orderbook')
 @Controller('orderbook')
@@ -20,12 +17,12 @@ export class OrderbookController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Get transaction for approve',
-    type: OrderbookGetApproveTxQueryDto,
+    type: OrderbookGetApproveTxResponseDto,
   })
   @Get('create-approve')
   createApproveTransaction(
     @Query() query: OrderbookGetApproveTxQueryDto,
-  ): Promise<ethers.TransactionRequest> {
+  ): Promise<OrderbookGetApproveTxDataDto> {
     return this.orderbookService.createApproveTransaction(query);
   }
 
@@ -40,7 +37,7 @@ export class OrderbookController {
     type: OrderbookSendResponseDto,
   })
   @Post('send-approve')
-  async sendApprove(@Body() body: OrderbookSendApproveTxQueryDto): Promise<void> {
+  async sendApprove(@Body() body: OrderbookSendApproveTxQueryDto): Promise<{ taskId: string }> {
     return await this.orderbookService.sendApproveTransaction(body);
   }
 

@@ -8,7 +8,7 @@ export const ERC20_ABI = [
     "function allowance(address _owner, address _spender) public view returns (uint256 remaining)",
   
     // Authenticated Functions
-    "function transfer(address to, uint amount) returns (boolean)",
+    "function transfer(address to, uint amount) returns (bool)",
     "function mint(address account, uint256 amount)",
     "function approve(address _spender, uint256 _value) public returns (bool success)",
     "function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)",

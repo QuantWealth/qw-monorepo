@@ -1,5 +1,6 @@
 import { ethers, TransactionRequest } from "ethers";
 import {ERC20_ABI} from "../../constants"
+import { Transaction } from "@safe-global/safe-core-sdk-types";
 
 export type ApproveParams = {
   contractAddress: string;
@@ -8,7 +9,7 @@ export type ApproveParams = {
   spender: string;
 }
 
-export const approve =  (params: ApproveParams): TransactionRequest => {
+export const approve =  (params: ApproveParams): Transaction => {
 
   const { contractAddress, amount, provider, spender } = params;
   try {
@@ -16,9 +17,10 @@ export const approve =  (params: ApproveParams): TransactionRequest => {
     const erc20Contract = new ethers.Contract(contractAddress, ERC20_ABI, provider);
     const data = erc20Contract.interface.encodeFunctionData('approve', [spender, amount]);
 
-    const transactionObj: TransactionRequest = {
+    const transactionObj: Transaction = {
       to: contractAddress,
-      data: data
+      data: data,
+      value: '0',
     };
     return transactionObj;
   } catch (error) {

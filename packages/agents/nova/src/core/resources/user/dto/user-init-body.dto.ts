@@ -8,7 +8,7 @@ export class UserInitBodyDto {
   @ApiProperty({
     example: '0x0617b72940f105811F251967EE4fdD5E38f159d5',
   })
-  walletAddress: string;
+  signerAddress: string;
 
   @IsString()
   @IsNotEmpty()

@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 /// Order Schema
 /// TODO: amounts, dapps, signatures, stratrgyType need to be in a object[] 
+interface MetaTransactionData  {
+  to: string;
+  value: string;
+  data: string;
+}
 interface IOrder {
   id: string;
   signer: string; // signer address
@@ -14,7 +19,7 @@ interface IOrder {
   dapps: string[];
   distribution?: boolean;
   amounts: string[];
-  signatures?: string[];
+  signatures?: MetaTransactionData[];
   status: "P" | "E" | "C"; // Pending, Executed, Canceled
   hashes?: string[]; // Optional array of transaction hashes
   strategyType: "FLEXI" | "FIXED";
@@ -30,9 +35,13 @@ const OrderSchema = new mongoose.Schema<IOrder>({
     cancelled: { type: Date }
   },
   dapps: [{ type: String, required: true }],
-  distribution: { type: Boolean, required: true },
+  distribution: { type: Boolean, required: false },
   amounts: [{ type: String, required: true }],
-  signatures: [{ type: String, required: true }],
+  signatures: [{ 
+    to: { type: String, required: true },
+    value: { type: String, required: true },
+    data: { type: String, required: true }
+   }],
   status: { type: String, enum: ["P", "E", "C"], required: true },
   hashes: [{ type: String }],
   strategyType: { type: String, enum: ["FLEXI", "FIXED"], required: true },
