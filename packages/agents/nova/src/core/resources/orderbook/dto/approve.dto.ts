@@ -16,16 +16,6 @@ export class OrderbookGetApproveTxQueryDto {
 
   @IsString()
   @IsNotEmpty()
-  @Length(42, 42)
-  @ApiProperty({
-    description: 'User SCW address',
-    example: '0xC7E0F1883aD6DABBA9a6a440beeBD2Bfe4851758',
-  })
-  walletAddress: string;
-
-
-  @IsString()
-  @IsNotEmpty()
   @ApiProperty({
     description: 'The amount of token to be approved',
     example: '1000000',

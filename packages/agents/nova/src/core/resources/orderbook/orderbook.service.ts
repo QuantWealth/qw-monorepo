@@ -16,14 +16,18 @@ import {
   normalizeMetaTransaction,
   receiveFunds,
   relayTransaction,
-  signSafeTransaction
+  signSafeTransaction,
 } from '@qw/utils';
 import { MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { JsonRpcProvider, Wallet, ethers } from 'ethers';
 import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
 import { v4 as uuidv4 } from 'uuid';
-import { OrderbookGetApproveTxDataDto, OrderbookGetApproveTxQueryDto, OrderbookSendApproveTxQueryDto } from './dto/approve.dto';
+import {
+  OrderbookGetApproveTxDataDto,
+  OrderbookGetApproveTxQueryDto,
+  OrderbookSendApproveTxQueryDto,
+} from './dto/approve.dto';
 
 @Injectable()
 export class OrderbookService {
@@ -35,9 +39,7 @@ export class OrderbookService {
   public signer: Wallet;
   public provider: JsonRpcProvider;
 
-  constructor(
-    private configService: ConfigService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.init();
   }
 
@@ -60,13 +62,15 @@ export class OrderbookService {
    * Creates an approval transaction to allow spending tokens from the user's wallet.
    * @param query The query containing asset address and amount details.
    * @returns A promise that resolves to an Transaction object representing the approval transaction.
-  */
-  async createApproveTransaction(query: OrderbookGetApproveTxQueryDto): Promise<OrderbookGetApproveTxDataDto> {
+   */
+  async createApproveTransaction(
+    query: OrderbookGetApproveTxQueryDto,
+  ): Promise<OrderbookGetApproveTxDataDto> {
     try {
       this.logger.log('Creating approve transaction:', query);
-      const { assetAddress, walletAddress, amount } = query;
-      const qwManagerAddress =
-        Object.values(this.config.chains)[0].contractAddresses.QWManager.address;
+      const { assetAddress, amount } = query;
+      const qwManagerAddress = Object.values(this.config.chains)[0]
+        .contractAddresses.QWManager.address;
 
       const txData = approve({
         contractAddress: assetAddress,
@@ -80,7 +84,7 @@ export class OrderbookService {
       // Get QW's deployed Safe's instance
       const qwSafe = await getDeployedSCW({
         rpc: rpc,
-        safeAddress: walletAddress,
+        safeAddress: '',
         signer: this.config.privateKey,
       });
 
@@ -92,26 +96,47 @@ export class OrderbookService {
       return {
         txData: txData,
         typedData: JSON.stringify(typedData),
-      }
+      };
     } catch (error) {
       this.logger.error('Error creating approve transaction:', error);
+      throw Error(error);
     }
   }
 
   /**
    * Creates a pending order in the orderbook and sends the approval transaction to Gelato.
    * @param query The query containing amount, wallet addresses, signed transaction, and strategy type details.
-  */
-  async sendApproveTransaction(query: OrderbookSendApproveTxQueryDto): Promise<{ taskId: string }> {
-    const { amount, signerAddress, walletAddress, metaTransaction, signature, strategyType } = query;
+   */
+  async sendApproveTransaction(
+    query: OrderbookSendApproveTxQueryDto,
+  ): Promise<{ taskId: string }> {
+    const {
+      amount,
+      signerAddress,
+      walletAddress,
+      metaTransaction,
+      signature,
+      strategyType,
+    } = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
     const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
     const dapps = [qwAaveV3Address];
     try {
-      await this._createOrder(signerAddress, walletAddress, amounts, dapps, metaTransaction, strategyType);
-      return this._sendApproveTransaction(signerAddress, metaTransaction, signature);
+      await this._createOrder(
+        signerAddress,
+        walletAddress,
+        amounts,
+        dapps,
+        metaTransaction,
+        strategyType,
+      );
+      return this._sendApproveTransaction(
+        signerAddress,
+        metaTransaction,
+        signature,
+      );
     } catch (err) {
-      console.log(err)
+      console.log(err);
       this.logger.error('Error sending approving tx:', err);
     }
   }
@@ -120,7 +145,7 @@ export class OrderbookService {
     signerAddress: string,
     metaTransaction: MetaTransactionData,
     signature: string,
-  ): Promise<{ taskId: string }>  {
+  ): Promise<{ taskId: string }> {
     const rpc = Object.values(this.config.chains)[0].providers[0];
     const gelatoApiKey = this.config.gelatoApiKey;
 
@@ -151,7 +176,7 @@ export class OrderbookService {
     amounts: string[],
     dapps: string[],
     userSignedTransaction: MetaTransactionData,
-    strategyType: "FLEXI" | "FIXED" // TODO: make it enum
+    strategyType: 'FLEXI' | 'FIXED', // TODO: make it enum
   ) {
     const currentTimestamp = Date.now();
 
@@ -162,12 +187,12 @@ export class OrderbookService {
       dapps,
       amounts,
       signatures: [userSignedTransaction],
-      status: "P",
+      status: 'P',
       strategyType,
       timestamps: {
-        placed: currentTimestamp // Set the current timestamp as the placed time
-      }
-    })
+        placed: currentTimestamp, // Set the current timestamp as the placed time
+      },
+    });
   }
 
   /**
@@ -253,7 +278,11 @@ export class OrderbookService {
       receiveFundsRequests.concat(executeRequests);
 
     // Init the QW safe for signing/wrapping relayed batch transactions below.
-    const safe = await initQW({ rpc, address: qwScwAddress, signer: this.signer.privateKey });
+    const safe = await initQW({
+      rpc,
+      address: qwScwAddress,
+      signer: this.signer.privateKey,
+    });
 
     // First, we relay receiveFunds.
     {
@@ -294,11 +323,11 @@ export class OrderbookService {
           OrderModel.updateOne(
             { id: order.id },
             {
-              status: "E",
-              "timestamps.executed": Date.now(),
-            }
-          ).exec()
-        )
+              status: 'E',
+              'timestamps.executed': Date.now(),
+            },
+          ).exec(),
+        ),
       );
     }
   }
