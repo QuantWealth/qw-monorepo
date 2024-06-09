@@ -119,8 +119,9 @@ export class OrderbookService {
       strategyType,
     } = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
-    const qwAaveV3Address = '0x0000000000000000000000000000000000000123';
-    const dapps = [qwAaveV3Address];
+    const qwUniswapV3StableAddress = Object.values(this.config.chains)[0]
+      .contractAddresses['QwUniswapV3Stable'];
+    const dapps = [qwUniswapV3StableAddress];
     try {
       await this._createOrder(
         signerAddress,
@@ -201,14 +202,14 @@ export class OrderbookService {
    * @returns A promise that resolves when all transactions have been executed.
    */
   async handleBatchExecuteOrders() {
-    const rpc = this.config.chains[0].providers[0];
+    const rpc = Object.values(this.config.chains)[0].providers[0];
     const chainId = Object.keys(this.config.chains)[0];
     const qwManagerAddress =
       this.config.chains[0].contractAddresses.QWManager.address;
     const erc20TokenAddress = USDT_SEPOLIA;
     const gelatoApiKey = this.config.gelatoApiKey;
     const qwScwAddress = await getSCW({ rpc, address: this.signer.address });
-    const signer = this.signer;
+    // const signer = this.signer;
 
     // Get the start and end dates for a period of 1 month into the past to now.
     const start = new Date();
@@ -251,7 +252,9 @@ export class OrderbookService {
     }
 
     // target array should be present at orders
-    const _target = ['0xA52a11Be28bEA0d559370eCbE2f1CB8B1e8e3EcA']; // AAVE V3 contract address
+    const qwUniswapAddress = Object.values(this.config.chains)[0]
+      .contractAddresses['QwUniswapV3Stable'];
+    const _target = [qwUniswapAddress]; // Uniswap V3 child contract address
     const target = _target; /// Addresses of the child contracts
     const tokens = [USDT_SEPOLIA]; /// Token addresses for each child contract
     const amount = [totalSum];
