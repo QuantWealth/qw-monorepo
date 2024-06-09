@@ -13,7 +13,7 @@ export const TChainConfig = Type.Object({
       contractName: Type.String(),
       address: TAddress,
     }),
-    QWAaveV3: Type.Object({
+    QWUniswapV3Stable: Type.Object({
       contractName: Type.String(),
       address: TAddress,
     }),
