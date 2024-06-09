@@ -68,7 +68,7 @@ export class OrderbookService {
   ): Promise<OrderbookGetApproveTxDataDto> {
     try {
       this.logger.log('Creating approve transaction:', query);
-      const { assetAddress, amount } = query;
+      const { assetAddress, walletAddress, amount } = query;
       const qwManagerAddress = Object.values(this.config.chains)[0]
         .contractAddresses.QWManager.address;
 
@@ -84,7 +84,7 @@ export class OrderbookService {
       // Get QW's deployed Safe's instance
       const qwSafe = await getDeployedSCW({
         rpc: rpc,
-        safeAddress: '',
+        safeAddress: walletAddress,
         signer: this.config.privateKey,
       });
 

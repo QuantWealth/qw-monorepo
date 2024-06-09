@@ -16,6 +16,15 @@ export class OrderbookGetApproveTxQueryDto {
 
   @IsString()
   @IsNotEmpty()
+  @Length(42, 42)
+  @ApiProperty({
+    description: 'Safe Wallet address',
+    example: '0x83A9aE82b26249EC6e01498F5aDf0Ec20fF3Da9C',
+  })
+  walletAddress: string;
+
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty({
     description: 'The amount of token to be approved',
     example: '1000000',
