@@ -13,9 +13,9 @@
           "contractName": "QWRegistry",
           "address": "0x57dbaE44a6a9F14294E4545cbaC5CBf9a9AD9b9a"
         },
-        "QwUniswapV3Stable": {
-          "contractName": "QwUniswapV3Stable",
-          "address": "0x3c4bAE0BFb62cD4cf19e0A0BF6e623B5155fcdd3"
+        "QWUniswapV3Stable": {
+          "contractName": "QWUniswapV3Stable",
+          "address": "0x272ebfD1e3D0cf7f5A6c2cA53CeF8F435186B18e"
         }
       }
     }

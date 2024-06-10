@@ -120,7 +120,7 @@ export class OrderbookService {
     } = query;
     const amounts = [amount]; // Currently, there is only one child contract, so the entire amount will be allocated to it.
     const qwUniswapV3StableAddress = Object.values(this.config.chains)[0]
-      .contractAddresses['QwUniswapV3Stable'];
+      .contractAddresses['QWUniswapV3Stable'].address;
     const dapps = [qwUniswapV3StableAddress];
     try {
       await this._createOrder(
