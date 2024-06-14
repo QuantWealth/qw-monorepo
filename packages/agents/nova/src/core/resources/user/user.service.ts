@@ -20,6 +20,7 @@ import {
   normalizeMetaTransaction,
   relayTransaction,
   signSafeTransaction,
+  isSCWDeployed,
 } from '@qw/utils';
 import {JsonRpcProvider, parseUnits} from 'ethers';
 import { ConfigService } from 'src/config/config.service';
@@ -77,16 +78,14 @@ export class UserService {
     // Initialize the user's smart contract wallet (SCW)
     const userSafe = await initSCW({ rpc: rpcUrl, address: signerAddress });
 
-    // // Check if the SCW is already deployed
-    // const hasSCW = await isSCWDeployed({
-    //   rpc: rpcUrl,
-    //   address: walletAddress,
-    //   safe: userSafe,
-    // });
+    // Check if the SCW is already deployed
+    const hasSCW = await isSCWDeployed({
+      safe: userSafe,
+    });
 
     // If SCW is already deployed
     const users = await this.userModel.find({ id: signerAddress });
-    if (users.length > 0 && users[0].deployed) {
+    if (users.length > 0 && hasSCW) {
       // Update the user's providers if they already exist
       await this.userModel.updateOne(
         {

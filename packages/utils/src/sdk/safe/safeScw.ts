@@ -70,7 +70,7 @@ export const getSCW = async (args: CreateSafeSdkArgs): Promise<string> => {
 };
 
 export const isSCWDeployed = async (
-  args: CreateSafeSdkArgs
+  args: { safe: Safe }
 ): Promise<boolean> => {
   return await args.safe.isSafeDeployed();
 };
