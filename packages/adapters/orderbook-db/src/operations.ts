@@ -1,12 +1,29 @@
 import { IOrder, IUser, OrderModel, UserModel } from "./schema";
 
 /**
- * Retrieves all orders associated with a specific user wallet.
+ * Retrieves orders associated with a specific user wallet, optionally filtered by status and date range.
  * @param userWallet - The wallet address of the user to fetch orders for.
+ * @param status - Optional. The status of the orders to filter (e.g., "P", "E", "C").
+ * @param start - Optional. The start of the timestamp range for filtering orders.
+ * @param end - Optional. The end of the timestamp range for filtering orders.
  * @returns A promise resolving to an array of orders linked to the given wallet address.
  */
-async function getUserOrders(userWallet: string): Promise<IOrder[]> {
-  return await OrderModel.find({ wallet: userWallet }).exec();
+async function getUserOrders(userWallet: string, status?: string, start?: Date, end?: Date): Promise<IOrder[]> {
+  const query: any = { wallet: userWallet };
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (start && end) {
+    query["timestamps.placed"] = { $gte: start, $lte: end };
+  } else if (start) {
+    query["timestamps.placed"] = { $gte: start };
+  } else if (end) {
+    query["timestamps.placed"] = { $lte: end };
+  }
+
+  return await OrderModel.find(query).exec();
 }
 
 /**
@@ -107,12 +124,40 @@ async function getOrders(start: Date, end: Date, status?: string, distribution?:
   return await OrderModel.find(query).exec();
 }
 
+/**
+ * Retrieves a user by their ID.
+ * @param id - The ID of the user to retrieve.
+ * @returns A promise resolving to the user document or null if not found.
+ */
 async function getUser(id: string): Promise<IUser | null> {
   return await UserModel.findOne({ id }).exec();
 }
 
+/**
+ * Creates a new user in the database.
+ * @param user - The user data to be saved.
+ * @returns A promise that resolves with the saved user document.
+ */
 async function createUser(user: IUser): Promise<IUser> {
   return await UserModel.create(user);
 }
 
-export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders, getUser, createUser };
+/**
+ * Retrieves a user by their signer.
+ * @param signer - The signer identifier to fetch the user for.
+ * @returns A promise resolving to the user document or null if not found.
+ */
+async function getUserBySigner(signer: string): Promise<IUser | null> {
+  return await UserModel.findOne({ signer }).exec();
+}
+
+/**
+ * Retrieves a user by their wallet address.
+ * @param wallet - The wallet address to fetch the user for.
+ * @returns A promise resolving to the user document or null if not found.
+ */
+async function getUserByWallet(wallet: string): Promise<IUser | null> {
+  return await UserModel.findOne({ wallet }).exec();
+}
+
+export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders, getUser, createUser, getUserBySigner, getUserByWallet };

@@ -1,5 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IOrder, OrderModel, getOrders } from '@qw/orderbook-db';
+import {
+  IOrder,
+  OrderModel,
+  getOrders,
+  getUserOrders,
+  getUserBySigner,
+  getUserByWallet,
+} from '@qw/orderbook-db';
 import {
   USDT_SEPOLIA,
   approve,
@@ -56,6 +63,30 @@ export class OrderbookService {
     } catch (error) {
       this.logger.error('Error initializing wallet:', error);
     }
+  }
+
+  /**
+   * Fetches all created orders for a specific user by their wallet address, optionally filtered by status and date range.
+   * @param walletAddress - The wallet address of the user to fetch orders for.
+   * @param status - Optional. The status of the orders to filter (e.g., "P", "E", "C").
+   * @param start - Optional. The start of the timestamp range for filtering orders.
+   * @param end - Optional. The end of the timestamp range for filtering orders.
+   * @returns A promise resolving to an array of orders linked to the given wallet address.
+   */
+  public async getUserOrders(
+    walletAddress: string,
+    status?: string,
+    start?: Date,
+    end?: Date,
+  ): Promise<IOrder[]> {
+    // Verify the user by wallet address.
+    const userByWallet = await getUserByWallet(walletAddress);
+    if (!userByWallet) {
+      throw new Error('User does not exist.');
+    }
+
+    // Fetch orders using the modified getUserOrders function.
+    return await getUserOrders(walletAddress, status, start, end);
   }
 
   /**
@@ -170,7 +201,17 @@ export class OrderbookService {
     });
   }
 
-  // internal fn
+  /**
+   * Validates order data and creates an order in the database.
+   * @param signerAddress - The address of the signer.
+   * @param walletAddress - The wallet address of the user.
+   * @param amounts - An array of string amounts to be converted to BigInt.
+   * @param dapps - An array of dapp addresses.
+   * @param userSignedTransaction - The signed meta transaction data.
+   * @param strategyType - The strategy type, either 'FLEXI' or 'FIXED'.
+   * @returns A promise that resolves with the saved order document.
+   * @throws Error if validation fails or user verification fails.
+   */
   private async _createOrder(
     signerAddress: string,
     walletAddress: string,
@@ -179,6 +220,48 @@ export class OrderbookService {
     userSignedTransaction: MetaTransactionData,
     strategyType: 'FLEXI' | 'FIXED', // TODO: make it enum
   ) {
+    // Validate input variables.
+    if (
+      !signerAddress ||
+      !walletAddress ||
+      !amounts ||
+      !dapps ||
+      !strategyType
+    ) {
+      throw new Error('Invalid order data');
+    }
+
+    // Verify the user by signer and wallet.
+    const userBySigner = await getUserBySigner(signerAddress);
+    const userByWallet = await getUserByWallet(walletAddress);
+
+    if (!userBySigner || !userByWallet || userBySigner.id !== userByWallet.id) {
+      throw new Error('Signer and wallet do not match the same user');
+    }
+
+    // Verify that amounts is an array of strings and all numbers are > 0.
+    if (
+      !Array.isArray(amounts) ||
+      !amounts.every(
+        (amount) => typeof amount === 'string' && BigInt(amount) > 0,
+      )
+    ) {
+      throw new Error('Invalid amounts array');
+    }
+
+    // Verify that dapps array is all valid addresses (basic check for address format).
+    const isValidAddress = (address: string) => /^0x[a-fA-F0-9]{40}$/.test(address);
+    if (!Array.isArray(dapps) || !dapps.every(isValidAddress)) {
+      throw new Error('Invalid dapps array');
+    }
+
+    // TODO: Verify that the dapps are registered dapps.
+
+    // Verify strategy type.
+    if (strategyType !== 'FLEXI' && strategyType !== 'FIXED') {
+      throw new Error('Invalid strategy type');
+    }
+
     const currentTimestamp = Date.now();
 
     this.orderModel.create({
