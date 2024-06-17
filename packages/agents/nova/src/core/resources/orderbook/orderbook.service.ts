@@ -1,5 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IOrder, OrderModel, getOrders, getUserBySigner, getUserByWallet } from '@qw/orderbook-db';
+import {
+  IOrder,
+  OrderModel,
+  getOrders,
+  getUserOrders,
+  getUserBySigner,
+  getUserByWallet,
+} from '@qw/orderbook-db';
 import {
   USDT_SEPOLIA,
   approve,
@@ -56,6 +63,30 @@ export class OrderbookService {
     } catch (error) {
       this.logger.error('Error initializing wallet:', error);
     }
+  }
+
+  /**
+   * Fetches all created orders for a specific user by their wallet address, optionally filtered by status and date range.
+   * @param walletAddress - The wallet address of the user to fetch orders for.
+   * @param status - Optional. The status of the orders to filter (e.g., "P", "E", "C").
+   * @param start - Optional. The start of the timestamp range for filtering orders.
+   * @param end - Optional. The end of the timestamp range for filtering orders.
+   * @returns A promise resolving to an array of orders linked to the given wallet address.
+   */
+  public async getUserOrders(
+    walletAddress: string,
+    status?: string,
+    start?: Date,
+    end?: Date,
+  ): Promise<IOrder[]> {
+    // Verify the user by wallet address.
+    const userByWallet = await getUserByWallet(walletAddress);
+    if (!userByWallet) {
+      throw new Error('User does not exist.');
+    }
+
+    // Fetch orders using the modified getUserOrders function.
+    return await getUserOrders(walletAddress, status, start, end);
   }
 
   /**
