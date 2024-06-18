@@ -12,9 +12,9 @@ interface IOrder {
   signer: string; // signer address
   wallet: string; // SCW wallet address
   timestamps: {
-    placed: number;
-    executed?: number;
-    cancelled?: number;
+    placed: Date;
+    executed?: Date;
+    cancelled?: Date;
   };
   dapps: string[];
   distribution?: boolean;
@@ -57,7 +57,7 @@ OrderSchema.pre("save", function (next) {
     this.status = "P";
     // TODO: Include once utils are ready:
     // this.id = keccak256(`${this.timestamp}-${this.wallet}`);
-    this.timestamps.placed = Date.now();
+    this.timestamps.placed = new Date();
   }
   next();
 });
