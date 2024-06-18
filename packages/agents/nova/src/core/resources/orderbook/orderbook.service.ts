@@ -363,9 +363,9 @@ export class OrderbookService {
         receiveFundsRequests.concat(executeRequests);
 
       // Init the QW safe for signing/wrapping relayed batch transactions below.
-      const safe = await initQW({
-        rpc,
-        address: qwScwAddress,
+      const qwSafe = await getDeployedSCW({
+        rpc: rpc,
+        safeAddress: qwScwAddress,
         signer: this.signer.privateKey,
       });
 
@@ -379,7 +379,7 @@ export class OrderbookService {
         // Create the gelato relay pack using an initialized SCW.
         const gelatoRelayPack = await createGelatoRelayPack({
           gelatoApiKey,
-          protocolKit: safe,
+          protocolKit: qwSafe,
         });
 
         // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
@@ -390,7 +390,7 @@ export class OrderbookService {
 
         // Use protocol kit to sign the safe transaction, enabling it to be relayed.
         safeTransaction = await signSafeTransaction({
-          protocolKit: safe,
+          protocolKit: qwSafe,
           safeTransaction,
         });
 

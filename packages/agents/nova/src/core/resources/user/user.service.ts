@@ -189,6 +189,7 @@ export class UserService {
     const user = await this.userModel.create({
       id: signerAddress,
       wallet: safeAddress,
+      signer: signerAddress,
       network: 'eth-sepolia',
       deployed: true,
       providers: [provider],
