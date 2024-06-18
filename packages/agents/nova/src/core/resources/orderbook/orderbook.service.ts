@@ -101,7 +101,7 @@ export class OrderbookService {
       this.logger.log('Creating approve transaction:', query);
       const { assetAddress, walletAddress, amount } = query;
       const qwManagerAddress = Object.values(this.config.chains)[0]
-        .contractAddresses.QWManager.address;
+        .contractAddresses['QWManager'].address;
 
       const txData = approve({
         contractAddress: assetAddress,
@@ -262,7 +262,7 @@ export class OrderbookService {
       throw new Error('Invalid strategy type');
     }
 
-    const currentTimestamp = Date.now();
+    const currentTimestamp = new Date();
 
     this.orderModel.create({
       id: uuidv4(),
@@ -285,136 +285,139 @@ export class OrderbookService {
    * @returns A promise that resolves when all transactions have been executed.
    */
   async handleBatchExecuteOrders() {
-    const rpc = Object.values(this.config.chains)[0].providers[0];
-    const chainId = Object.keys(this.config.chains)[0];
-    const qwManagerAddress =
-      this.config.chains[0].contractAddresses.QWManager.address;
-    const erc20TokenAddress = USDT_SEPOLIA;
-    const gelatoApiKey = this.config.gelatoApiKey;
-    const qwScwAddress = await getSCW({ rpc, address: this.signer.address });
-    // const signer = this.signer;
+    try {
+      const rpc = Object.values(this.config.chains)[0].providers[0];
+      const qwManagerAddress = Object.values(this.config.chains)[0]
+        .contractAddresses['QWManager'].address;
+      const erc20TokenAddress = USDT_SEPOLIA;
+      const gelatoApiKey = this.config.gelatoApiKey;
+      const qwScwAddress = '0xC22E238cbAb8B34Dc0014379E00B38D15D806115'; // Address of the safe
+      // const signer = this.signer;
 
-    // Get the start and end dates for a period of 1 month into the past to now.
-    const start = new Date();
-    start.setMonth(start.getMonth() - 1);
-    const end = new Date();
-    end.setSeconds(end.getSeconds() + 10);
+      // Get the start and end dates for a period of 1 month into the past to now.
+      const start = new Date();
+      start.setMonth(start.getMonth() - 1);
 
-    // Get pending orders.
-    const pendingOrders: IOrder[] = await getOrders(start, end, 'P', false);
-    const provider = new ethers.JsonRpcProvider(rpc, chainId);
+      const end = new Date();
+      end.setSeconds(end.getSeconds() + 10);
 
-    const receiveFundsRequests: MetaTransactionData[] = [];
-    let totalSum = BigInt(0);
+      // Get pending orders.
+      const pendingOrders: IOrder[] = await getOrders(start, end, 'P');
+      const provider = new ethers.JsonRpcProvider(rpc);
 
-    for (const order of pendingOrders) {
-      // TODO: Orderbook IOrder schema should have token address(es).
-      // User is supplying multiple dapps, but we will combine the amounts and we are assuming the same token address for now.
-      const sum = order.amounts.reduce(
-        (acc, val) => acc + BigInt(val),
-        BigInt(0),
-      );
+      const receiveFundsRequests: MetaTransactionData[] = [];
+      let totalSum = BigInt(0);
 
-      totalSum = BigInt(totalSum) + BigInt(sum);
+      for (const order of pendingOrders) {
+        // TODO: Orderbook IOrder schema should have token address(es).
+        // User is supplying multiple dapps, but we will combine the amounts and we are assuming the same token address for now.
+        const sum = order.amounts.reduce(
+          (acc, val) => acc + BigInt(val),
+          BigInt(0),
+        );
+        totalSum = BigInt(totalSum) + BigInt(sum);
 
-      // Derive the receive funds transaction request, push to batch.
+        // Derive the receive funds transaction request, push to batch.
 
-      const txReq = receiveFunds({
+        const txReq = receiveFunds({
+          contractAddress: qwManagerAddress,
+          provider,
+          user: order.wallet,
+          token: erc20TokenAddress,
+          amount: sum,
+        });
+
+        receiveFundsRequests.push({
+          to: String(await txReq.to!),
+          value: String(txReq.value!),
+          data: txReq.data,
+        });
+      }
+
+      // target array should be present at orders
+      const qwUniswapAddress = Object.values(this.config.chains)[0]
+        .contractAddresses['QWUniswapV3Stable'].address;
+      const _target = [qwUniswapAddress]; // Uniswap V3 child contract address
+      const target = _target; /// Addresses of the child contracts
+      const tokens = USDT_SEPOLIA; /// Token addresses for each child contract
+      const amount = totalSum;
+      // execute request preparation
+
+      const callData = ['0x']; /// Calldata for each child contract
+      const _executeRequests: ethers.TransactionRequest = execute({
         contractAddress: qwManagerAddress,
         provider,
-        user: order.signer,
-        token: erc20TokenAddress,
-        amount: sum,
+        target,
+        callData,
+        tokens,
+        amount,
       });
 
-      receiveFundsRequests.push({
-        to: String(await txReq.to!),
-        value: String(txReq.value!),
-        data: txReq.data,
-      });
-    }
+      const executeRequests = {
+        to: String(await _executeRequests.to!),
+        value: String(_executeRequests.value!),
+        data: _executeRequests.data,
+      };
 
-    // target array should be present at orders
-    const qwUniswapAddress = Object.values(this.config.chains)[0]
-      .contractAddresses['QwUniswapV3Stable'];
-    const _target = [qwUniswapAddress]; // Uniswap V3 child contract address
-    const target = _target; /// Addresses of the child contracts
-    const tokens = [USDT_SEPOLIA]; /// Token addresses for each child contract
-    const amount = [totalSum];
-    // execute request preparation
+      const relayRequests: MetaTransactionData[] =
+        receiveFundsRequests.concat(executeRequests);
 
-    const callData = ['']; /// Calldata for each child contract
-
-    const _executeRequests: ethers.TransactionRequest = execute({
-      contractAddress: qwManagerAddress,
-      provider,
-      target,
-      callData,
-      tokens,
-      amount,
-    });
-
-    const executeRequests = {
-      to: String(await _executeRequests.to!),
-      value: String(_executeRequests.value!),
-      data: _executeRequests.data,
-    };
-
-    const relayRequests: MetaTransactionData[] =
-      receiveFundsRequests.concat(executeRequests);
-
-    // Init the QW safe for signing/wrapping relayed batch transactions below.
-    const safe = await initQW({
-      rpc,
-      address: qwScwAddress,
-      signer: this.signer.privateKey,
-    });
-
-    // First, we relay receiveFunds.
-    {
-      // Create the MetaTransactionData.
-      const transactions = await createTransactions({
-        transactions: relayRequests,
+      // Init the QW safe for signing/wrapping relayed batch transactions below.
+      const safe = await initQW({
+        rpc,
+        address: qwScwAddress,
+        signer: this.signer.privateKey,
       });
 
-      // Create the gelato relay pack using an initialized SCW.
-      const gelatoRelayPack = await createGelatoRelayPack({
-        gelatoApiKey,
-        protocolKit: safe,
-      });
+      // First, we relay receiveFunds.
+      {
+        // Create the MetaTransactionData.
+        const transactions = await createTransactions({
+          transactions: relayRequests,
+        });
 
-      // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
-      let safeTransaction = await relayTransaction({
-        transactions,
-        gelatoRelayPack,
-      });
+        // Create the gelato relay pack using an initialized SCW.
+        const gelatoRelayPack = await createGelatoRelayPack({
+          gelatoApiKey,
+          protocolKit: safe,
+        });
 
-      // Use protocol kit to sign the safe transaction, enabling it to be relayed.
-      safeTransaction = await signSafeTransaction({
-        protocolKit: safe,
-        safeTransaction,
-      });
+        // This will derive from MetaTransactionData and the gelato relay pack a SafeTransaction.
+        let safeTransaction = await relayTransaction({
+          transactions,
+          gelatoRelayPack,
+        });
 
-      // Execute the relay transaction using gelato.
-      await executeRelayTransaction({
-        gelatoRelayPack,
-        signedSafeTransaction: safeTransaction,
-      });
+        // Use protocol kit to sign the safe transaction, enabling it to be relayed.
+        safeTransaction = await signSafeTransaction({
+          protocolKit: safe,
+          safeTransaction,
+        });
 
-      // update the status of the orderbook.
-      // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
-      // Order schema should really record the gelato relay ID in this case...
-      await Promise.all(
-        pendingOrders.map((order) =>
-          OrderModel.updateOne(
-            { id: order.id },
-            {
-              status: 'E',
-              'timestamps.executed': Date.now(),
-            },
-          ).exec(),
-        ),
-      );
+        // Execute the relay transaction using gelato.
+        await executeRelayTransaction({
+          gelatoRelayPack,
+          signedSafeTransaction: safeTransaction,
+        });
+
+        // update the status of the orderbook.
+        // TODO: update order status from pending to executed, optionally record hashes of transactions in order.hashes?
+        // Order schema should really record the gelato relay ID in this case...
+        await Promise.all(
+          pendingOrders.map((order) =>
+            OrderModel.updateOne(
+              { id: order.id },
+              {
+                status: 'E',
+                'timestamps.executed': Date.now(),
+              },
+            ).exec(),
+          ),
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      this.logger.error('Error batch executing tx:', err);
     }
   }
 }
