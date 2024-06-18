@@ -14,9 +14,13 @@ import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
 import { UserBalanceResponseDto } from './dto/user-balance-response.dto';
 import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
-import { UserInitResponseDto, UserResponseDto } from './dto/user-init-response.dto';
+import {
+  UserInitResponseDto,
+  UserResponseDto,
+} from './dto/user-init-response.dto';
 import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
 import { UserService } from './user.service';
+import { UserSignatureQueryDto } from './dto/user-signature-query.dto';
 
 @ApiTags('user')
 @Controller('user')
@@ -87,5 +91,21 @@ export class UserController {
   @Post('sendTx')
   async sendTx(@Body() body: UserSendTxBodyDto): Promise<void> {
     return await this.userService.sendTx(body);
+  }
+
+  /**
+   * Retrieves user sign tx
+   * @param {UserSignatureQueryDto} query - query params containing user wallet address and the way returned data should be arranged
+   * @returns userTokenBalance array
+   */
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Get Signature',
+    type: UserSignatureQueryDto,
+  })
+  @Get('signature')
+  getSignature(@Query() query: UserSignatureQueryDto): Promise<string> {
+    return this.userService.getSignature(query);
   }
 }

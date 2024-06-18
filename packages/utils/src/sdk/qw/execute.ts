@@ -6,8 +6,8 @@ export type ExecuteParams = {
     provider: ethers.JsonRpcApiProvider;
     target: string[];
     callData: string[];
-    tokens: string[];
-    amount: BigInt[];
+    tokens: string;
+    amount: BigInt;
 }
 
 export const execute = (params: ExecuteParams): TransactionRequest => {
@@ -20,7 +20,8 @@ export const execute = (params: ExecuteParams): TransactionRequest => {
 
         const transactionObj: TransactionRequest = {
             to: contractAddress,
-            data: data
+            data: data,
+            value: 0n
         };
         return transactionObj;
     } catch (error) {

@@ -62,7 +62,7 @@ async function executeOrder(orderId: string, hashes: string[]): Promise<IOrder |
     { id: orderId },
     {
       status: "E",
-      "timestamps.executed": Date.now(),
+      "timestamps.executed": new Date(),
       hashes: hashes
     }
   ).exec();
@@ -90,7 +90,7 @@ async function cancelOrder(orderId: string): Promise<IOrder | null> {
     { id: orderId },
     {
       status: "C",
-      "timestamps.cancelled": Date.now()
+      "timestamps.cancelled": new Date()
     }
   ).exec();
 

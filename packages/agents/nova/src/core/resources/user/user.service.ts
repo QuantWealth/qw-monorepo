@@ -22,7 +22,7 @@ import {
   signSafeTransaction,
   isSCWDeployed,
 } from '@qw/utils';
-import {JsonRpcProvider, parseUnits} from 'ethers';
+import { JsonRpcProvider, parseUnits } from 'ethers';
 import { ConfigService } from 'src/config/config.service';
 import { NovaConfig } from 'src/config/schema';
 import { UserBalanceQueryDto } from './dto/user-balance-query.dto';
@@ -30,6 +30,8 @@ import { UserDataQueryDto } from './dto/user-data-query.dto';
 import { UserInitBodyDto } from './dto/user-init-body.dto';
 import { UserResponseDto } from './dto/user-init-response.dto';
 import { UserSendTxBodyDto } from './dto/user-send-tx-body.dto';
+import { ethers } from 'ethers';
+import { UserSignatureQueryDto } from './dto/user-signature-query.dto';
 
 @Injectable()
 export class UserService {
@@ -65,12 +67,28 @@ export class UserService {
     return resp.data;
   }
 
+  async getSignature(query: UserSignatureQueryDto): Promise<string> {
+    const wallet = new ethers.Wallet(query.privateKey);
+
+    const typedData = JSON.parse(query.typedData);
+
+    const signature = await wallet.signTypedData(
+      JSON.parse(typedData).domain,
+      { SafeTx: JSON.parse(typedData).types.SafeTx },
+      JSON.parse(typedData).message,
+    );
+    return signature;
+  }
+
   /**
    * This service is called by /user/init endpoint
    * It deploys the smart contract and initializes the user
    * @returns transaction
    */
-  async userInit({ signerAddress, provider }: UserInitBodyDto): Promise<UserResponseDto> {
+  async userInit({
+    signerAddress,
+    provider,
+  }: UserInitBodyDto): Promise<UserResponseDto> {
     const rpcUrl = Object.values(this.config.chains)[0].providers[0]; // RPC URL
 
     const gelatoApiKey = this.config.gelatoApiKey;
@@ -171,6 +189,7 @@ export class UserService {
     const user = await this.userModel.create({
       id: signerAddress,
       wallet: safeAddress,
+      signer: signerAddress,
       network: 'eth-sepolia',
       deployed: true,
       providers: [provider],
