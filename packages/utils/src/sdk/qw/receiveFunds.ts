@@ -19,7 +19,8 @@ export const receiveFunds = (params: ReceiveFundsParams): TransactionRequest => 
 
         const transactionObj: TransactionRequest = {
             to: contractAddress,
-            data: data
+            data: data,
+            value: 0n
         };
         return transactionObj;
     } catch (error) {
