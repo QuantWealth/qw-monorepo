@@ -1,4 +1,4 @@
-import { IOrder, IUser, OrderModel, UserModel } from "./schema";
+import { IOrder, IUser, OrderModel, UserModel, EpochModel, SharesModel, IEpoch, IShares } from "./schema";
 
 /**
  * Retrieves orders associated with a specific user wallet, optionally filtered by status and date range.
@@ -160,4 +160,85 @@ async function getUserByWallet(wallet: string): Promise<IUser | null> {
   return await UserModel.findOne({ wallet }).exec();
 }
 
-export { getUserOrders, getUserOrdersBySigner, submitOrder, executeOrder, cancelOrder, getOrder, getOrders, getUser, createUser, getUserBySigner, getUserByWallet };
+/**
+ * Retrieves the current epoch index.
+ * @returns A promise resolving to the current epoch index.
+ */
+async function getCurrentEpochIndex(): Promise<number> {
+  const latestEpoch = await EpochModel.findOne().sort({ index: -1 }).exec();
+  return latestEpoch ? latestEpoch.index : 0;
+}
+
+/**
+ * Creates a new epoch in the database.
+ * @param epochData - The epoch data to be saved.
+ * @returns A promise that resolves with the saved epoch document.
+ */
+async function createEpoch(epochData: IEpoch): Promise<IEpoch> {
+  const index = await getCurrentEpochIndex();
+  const epoch = new EpochModel({ ...epochData, index: index + 1 });
+  return await epoch.save();
+}
+
+/**
+ * Adds shares for a user in a specific protocol.
+ * @param user - The address of the user.
+ * @param protocol - The address of the protocol.
+ * @param sharesAmount - The amount of shares to add.
+ * @returns A promise resolving to the updated shares document.
+ */
+async function addUserShares(user: string, protocol: string, sharesAmount: number): Promise<IShares> {
+  const shares = await SharesModel.findOne() || new SharesModel({ count: 0, protocols: {} });
+
+  if (!shares.protocols[protocol]) {
+    shares.protocols[protocol] = { totalShares: 0, userShares: {} };
+    shares.count += 1;
+  }
+
+  if (!shares.protocols[protocol].userShares[user]) {
+    shares.protocols[protocol].userShares[user] = 0;
+  }
+
+  shares.protocols[protocol].totalShares += sharesAmount;
+  shares.protocols[protocol].userShares[user] += sharesAmount;
+
+  return await shares.save();
+}
+
+/**
+ * Subtracts shares for a user in a specific protocol.
+ * @param user - The address of the user.
+ * @param protocol - The address of the protocol.
+ * @param sharesAmount - The amount of shares to subtract.
+ * @returns A promise resolving to the updated shares document.
+ */
+async function subtractUserShares(user: string, protocol: string, sharesAmount: number): Promise<IShares> {
+  const shares = await SharesModel.findOne();
+
+  if (!shares || !shares.protocols[protocol] || !shares.protocols[protocol].userShares[user]) {
+    throw new Error("Shares not found for the user and protocol");
+  }
+
+  shares.protocols[protocol].totalShares -= sharesAmount;
+  shares.protocols[protocol].userShares[user] -= sharesAmount;
+
+  return await shares.save();
+}
+
+export { 
+  getUserOrders, 
+  getUserOrdersBySigner, 
+  submitOrder, 
+  executeOrder, 
+  cancelOrder, 
+  getOrder, 
+  getOrders, 
+  getUser, 
+  createUser, 
+  getUserBySigner, 
+  getUserByWallet, 
+  getCurrentEpochIndex, 
+  createEpoch, 
+  addUserShares, 
+  subtractUserShares,
+};
