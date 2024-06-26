@@ -39,6 +39,14 @@ jobs:
         with:
           images: quantwealthdev/qw-nova
 
+      - name: Create config file
+        env:
+          NOVA_CONFIG: ${{ secrets.NOVA_CONFIG }}
+        run: |
+          touch packages/agents/nova/src/config/config.json
+          echo "$NOVA_CONFIG" >> packages/agents/nova/src/config/config.json
+        shell: bash
+
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
@@ -48,11 +56,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-      
